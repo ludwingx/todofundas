@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import bcrypt from 'bcryptjs'
-import { SignJWT } from 'jose'
+import { SignJWT, jwtVerify } from 'jose'
 import { prisma } from '@/lib/prisma'
 const key = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key-change-in-production')
 
@@ -73,9 +73,30 @@ export async function loginAction(formData: FormData) {
 }
 
 export async function logoutAction() {
-  const cookieStore = await cookies()
-  cookieStore.delete('session')
-  redirect('/login')
+  try {
+    const cookieStore = await cookies()
+    cookieStore.delete('session')
+    return { success: true }
+  } catch (error) {
+    console.error('Logout error:', error)
+    return { error: 'Error during logout' }
+  }
+}
+
+export async function getSession() {
+  try {
+    const cookieStore = await cookies()
+    const sessionCookie = cookieStore.get('session')
+    
+    if (!sessionCookie) {
+      return null
+    }
+
+    const { payload } = await jwtVerify(sessionCookie.value, key)
+    return payload
+  } catch (error) {
+    return null
+  }
 }
 
 export async function createUserAction(formData: FormData) {

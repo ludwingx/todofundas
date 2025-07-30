@@ -87,19 +87,6 @@ export function RegisterForm({
                 </div>
               </div>
 
-              {state?.error && (
-                <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
-                  <strong>Error:</strong> {state.error}
-                </div>
-              )}
-
-              {state?.success && (
-                <div className="text-sm text-green-700 bg-green-50 p-3 rounded-md border border-green-200">
-                  <strong>¡Éxito!</strong> Cuenta creada correctamente.
-                  Redirigiendo al login...
-                </div>
-              )}
-
               <Button
                 type="submit"
                 disabled={pending}

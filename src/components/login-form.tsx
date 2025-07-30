@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { loginAction } from "@/app/actions/auth"
+import { toast } from "sonner"
 import { useActionState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -20,7 +21,10 @@ export function LoginForm({
   const [state, formAction, pending] = useActionState(async (prevState: any, formData: FormData) => {
     const result = await loginAction(formData)
     if (result?.success) {
+      toast.success("¡Inicio de sesión exitoso! Redirigiendo...")
       router.push('/dashboard')
+    } else if (result?.error) {
+      toast.error(result.error)
     }
     return result
   }, null)
@@ -65,11 +69,6 @@ export function LoginForm({
                   />
                 </div>
               </div>
-              {state?.error && (
-                <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                  {state.error}
-                </div>
-              )}
               <Button 
                 type="submit" 
                 disabled={pending}

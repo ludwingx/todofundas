@@ -120,3 +120,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .btn:hover {
+    @apply brightness-110;
+  }
+}
+
+/* Fix horizontal scroll globally */
+html, body, #__next {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden !important;
+}
