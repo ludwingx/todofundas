@@ -16,6 +16,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import NewProductClient from "./NewProductClient";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
@@ -49,21 +51,16 @@ export default async function ProductsPage() {
   // Obtener productos reales de la base de datos
   const products = await prisma.product.findMany({
     include: {
-      supplier: {
-        select: {
-          name: true
-        }
-      },
-      type: {
-        select: {
-          name: true
-        }
-      }
+      supplier: { select: { name: true } },
+      type: { select: { name: true } }
     },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  })
+    orderBy: { createdAt: 'desc' }
+  });
+
+  // Obtener tipos, proveedores y modelos
+  const productTypes = await prisma.productType.findMany({ select: { id: true, name: true } });
+  const suppliers = await prisma.supplier.findMany({ select: { id: true, name: true } });
+  const phoneModels = await prisma.phoneModel.findMany({ select: { id: true, name: true } });
 
   return (
     <SidebarProvider>
@@ -107,12 +104,23 @@ export default async function ProductsPage() {
                 Gestiona tu catálogo de fundas y protectores
               </p>
             </div>
-            <Button asChild>
-              <Link href="/inventory/products/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo Producto
-              </Link>
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="px-4 py-2 rounded bg-primary text-primary-foreground font-semibold shadow hover:bg-primary/90 transition text-sm">
+                  + Nuevo Producto
+                </button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Nuevo Producto</DialogTitle>
+                </DialogHeader>
+                <NewProductClient
+                  productTypes={productTypes}
+                  suppliers={suppliers}
+                  phoneModels={phoneModels}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Filters and Search */}
@@ -137,11 +145,10 @@ export default async function ProductsPage() {
                 <TableRow>
                   <TableHead className="w-[64px] hidden sm:table-cell">Imagen</TableHead>
                   <TableHead>Producto</TableHead>
-                  <TableHead>Modelo</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead>Precio Retail</TableHead>
+                  <TableHead>Precio</TableHead>
                   <TableHead>Proveedor</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -168,7 +175,6 @@ export default async function ProductsPage() {
                         <div className="font-medium">{product.name}</div>
                         <div className="text-xs text-muted-foreground">{product.color}</div>
                       </TableCell>
-                      <TableCell>{product.model}</TableCell>
                       <TableCell>{product.type.name}</TableCell>
                       <TableCell>
                         <span className={`font-semibold ${

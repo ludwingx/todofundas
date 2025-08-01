@@ -116,7 +116,7 @@ export async function getRecentActivity() {
         product: {
           select: {
             name: true,
-            model: true,
+            phoneModel: { select: { name: true } },
             color: true
           }
         },
@@ -138,7 +138,7 @@ export async function getRecentActivity() {
         product: {
           select: {
             name: true,
-            model: true,
+            phoneModel: { select: { name: true } },
             color: true
           }
         }
@@ -150,7 +150,7 @@ export async function getRecentActivity() {
       ...recentMovements.map(movement => ({
         id: movement.id,
         title: `${movement.type === 'entrada' ? 'Entrada' : 'Salida'} de stock`,
-        description: `${movement.product.name} ${movement.product.model} - ${Math.abs(movement.quantity)} unidades`,
+        description: `${movement.product.name} ${movement.product.phoneModel?.name || ''} - ${Math.abs(movement.quantity)} unidades`,
         timestamp: movement.createdAt.toLocaleDateString('es-ES', { 
           month: 'short', 
           day: 'numeric',
@@ -162,7 +162,7 @@ export async function getRecentActivity() {
       ...recentSales.map(sale => ({
         id: sale.id,
         title: 'Venta realizada',
-        description: `${sale.product.name} ${sale.product.model} - ${sale.quantity} unidades`,
+        description: `${sale.product.name} ${sale.product.phoneModel?.name || ''} - ${sale.quantity} unidades`,
         timestamp: sale.createdAt.toLocaleDateString('es-ES', { 
           month: 'short', 
           day: 'numeric',
@@ -195,7 +195,7 @@ export async function getTopProducts() {
         select: {
           id: true,
           name: true,
-          model: true,
+          phoneModel: { select: { name: true } },
           color: true,
           stock: true,
           priceRetail: true
@@ -235,7 +235,7 @@ export async function getTopProducts() {
       select: {
         id: true,
         name: true,
-        model: true,
+        phoneModel: { select: { name: true } },
         color: true,
         stock: true,
         priceRetail: true

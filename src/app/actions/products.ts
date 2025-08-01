@@ -5,23 +5,36 @@ import { supabase } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
-export async function createProduct(prevState: any, formData: FormData) {
+export async function createProduct(prevState: any, formData: any) {
   try {
-    const name = formData.get('name') as string
-    const model = formData.get('model') as string
-    const color = formData.get('color') as string
-    const stock = parseInt(formData.get('stock') as string)
-    const minStock = parseInt(formData.get('minStock') as string) || 5
-    const priceRetail = parseFloat(formData.get('priceRetail') as string)
-    const priceWholesale = parseFloat(formData.get('priceWholesale') as string)
-    const costPrice = parseFloat(formData.get('costPrice') as string)
-    const warehouseId = formData.get('warehouseId') as string
-    const typeId = formData.get('typeId') as string
-    const supplierId = formData.get('supplierId') as string || null
-    const imageFile = formData.get('image') as File
+    const name = formData.name as string;
+    const phoneModelId = formData.phoneModelId as string;
+    const color = formData.color as string;
+    const stock = Number(formData.stock);
+    const minStock = formData.minStock !== undefined ? Number(formData.minStock) : 5;
+    const priceRetail = Number(formData.priceRetail);
+    const priceWholesale = Number(formData.priceWholesale);
+    const costPrice = Number(formData.costPrice);
+    const typeId = formData.typeId as string;
+    const supplierId = formData.supplierId || null;
+    const imageFile = formData.image as File;
+
+    // LOG: mostrar todos los datos que llegan
+    console.log('DEBUG createProduct', {
+      name,
+      phoneModelId,
+      color,
+      stock,
+      minStock,
+      priceRetail,
+      priceWholesale,
+      costPrice,
+      typeId,
+      supplierId
+    });
 
     // Validaciones básicas
-    if (!name || !model || !color || isNaN(stock) || isNaN(priceRetail) || isNaN(priceWholesale) || isNaN(costPrice)) {
+    if (!name || !phoneModelId || !color || isNaN(stock) || isNaN(priceRetail) || isNaN(priceWholesale) || isNaN(costPrice)) {
       return { error: 'Todos los campos obligatorios deben ser completados correctamente' }
     }
 
@@ -50,20 +63,6 @@ export async function createProduct(prevState: any, formData: FormData) {
       imageUrl = urlData.publicUrl
     }
 
-    // Verificar si existe warehouse y type, crear si no existen
-    let warehouse = await prisma.warehouse.findFirst({
-      where: { id: warehouseId }
-    })
-
-    if (!warehouse) {
-      warehouse = await prisma.warehouse.create({
-        data: {
-          id: warehouseId,
-          name: 'Almacén Principal',
-          location: 'Ubicación Principal'
-        }
-      })
-    }
 
     let productType = await prisma.productType.findFirst({
       where: { id: typeId }
@@ -82,14 +81,13 @@ export async function createProduct(prevState: any, formData: FormData) {
     const product = await prisma.product.create({
       data: {
         name,
-        model,
+        phoneModelId,
         color,
         stock,
         minStock,
         priceRetail,
         priceWholesale,
         costPrice,
-        warehouseId: warehouse.id,
         typeId: productType.id,
         supplierId: supplierId || undefined,
         imageUrl
@@ -117,18 +115,6 @@ export async function createProduct(prevState: any, formData: FormData) {
   } catch (error) {
     console.error('Error creating product:', error)
     return { error: 'Error al crear el producto. Intenta nuevamente.' }
-  }
-}
-
-export async function getWarehouses() {
-  try {
-    const warehouses = await prisma.warehouse.findMany({
-      orderBy: { name: 'asc' }
-    })
-    return warehouses
-  } catch (error) {
-    console.error('Error fetching warehouses:', error)
-    return []
   }
 }
 
@@ -160,11 +146,6 @@ export async function getProducts() {
   try {
     const products = await prisma.product.findMany({
       include: {
-        warehouse: {
-          select: {
-            name: true
-          }
-        },
         type: {
           select: {
             name: true

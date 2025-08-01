@@ -110,7 +110,7 @@ export function AppSidebar({ user, ...props }: React.ComponentProps<typeof Sideb
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.quickAccess} />
+        {/* <NavProjects projects={data.quickAccess} /> */}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user || data.user} />

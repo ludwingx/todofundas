@@ -12,13 +12,14 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Spinner } from "@/components/ui/spinner";
 import { fetchPhoneModels, createPhoneModel, deletePhoneModel, updatePhoneModel } from "@/lib/phone-models-api";
 
-export function ModelCombobox({ name, required }: { name: string; required?: boolean }) {
+export function ModelCombobox({ name, required, value, onChange }: { name: string; required?: boolean; value?: string; onChange?: (value: string) => void }) {
   const [open, setOpen] = React.useState(false);
   const [models, setModels] = React.useState<{ id: string; name: string }[]>([]);
   const [query, setQuery] = React.useState("");
-  const [selectedId, setSelectedId] = React.useState<string>("");
+  const [selectedId, setSelectedId] = React.useState<string>(value || "");
   const [selectedName, setSelectedName] = React.useState<string>("");
   const [loading, setLoading] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -33,6 +34,16 @@ export function ModelCombobox({ name, required }: { name: string; required?: boo
       });
     }
   }, [open]);
+
+  // Sincroniza selectedId si value cambia desde fuera
+  React.useEffect(() => {
+    if (typeof value === 'string' && value !== selectedId) {
+      setSelectedId(value);
+      const found = models.find(m => m.id === value);
+      setSelectedName(found ? found.name : "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, models]);
 
   React.useEffect(() => {
     // Si el form se resetea, limpia el valor
@@ -114,8 +125,8 @@ export function ModelCombobox({ name, required }: { name: string; required?: boo
           )}
           aria-expanded={open}
         >
-          {selectedName ? selectedName : "Selecciona un modelo..."}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <span className="truncate text-left flex-1">{selectedName || "Selecciona modelo..."}</span>
+          {loading ? <Spinner className="ml-2 w-4 h-4" /> : <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0 max-h-72 overflow-y-auto">
@@ -128,21 +139,23 @@ export function ModelCombobox({ name, required }: { name: string; required?: boo
             disabled={loading}
           />
           <CommandEmpty>
-            <div className="flex items-center justify-between gap-2 px-2 py-2">
-              <span className="text-sm">Añadir modelo:</span>
-              <span className="font-semibold text-sm truncate max-w-[140px]">{query}</span>
-              <button
-                type="button"
-                className="ml-2 inline-flex items-center justify-center rounded-full border border-primary bg-primary text-primary-foreground hover:bg-primary/90 transition h-7 w-7 disabled:opacity-50 disabled:pointer-events-none"
-                disabled={loading || !query.trim()}
-                onMouseDown={e => e.preventDefault()}
-                onClick={handleAddModel}
-                title="Agregar modelo"
-              >
-                <span className="sr-only">Agregar modelo</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-              </button>
-            </div>
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-4">
+                <Spinner className="w-6 h-6 mb-2" />
+                <span className="text-sm text-muted-foreground">Cargando modelos...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground px-2 py-2">
+                Sin resultados
+                <button
+                  className="ml-2 text-primary hover:underline text-xs"
+                  onClick={handleAddModel}
+                  disabled={loading || !query.trim()}
+                >
+                  Agregar "{query}"
+                </button>
+              </div>
+            )}
           </CommandEmpty>
           <CommandGroup>
             <CommandList>
@@ -154,6 +167,7 @@ export function ModelCombobox({ name, required }: { name: string; required?: boo
                       setSelectedId(model.id);
                       setSelectedName(model.name);
                       setOpen(false);
+                      if (onChange) onChange(model.id);
                     }}
                     className="flex-1 min-w-0 px-0 py-0 bg-transparent hover:bg-transparent cursor-pointer"
                   >

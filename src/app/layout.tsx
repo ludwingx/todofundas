@@ -16,8 +16,12 @@ export const metadata: Metadata = {
   title: "TodoFundas - Gestión de Stock",
   description: "Sistema de gestión de inventario para fundas y protectores de celular",
   keywords: ["fundas", "protectores", "celular", "inventario", "stock", "ventas"],
-  authors: [{ name: "TodoFundas Team" }],
-  viewport: "width=device-width, initial-scale=1",
+  authors: [{ name: "TodoFundas Team" }]
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 import { ThemeProvider } from "@/components/theme-provider"
