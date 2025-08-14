@@ -110,9 +110,9 @@ export default async function ProductsPage() {
                   + Nuevo Producto
                 </button>
               </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Nuevo Producto</DialogTitle>
+              <DialogContent className="sm:max-w-2xl p-4">
+                <DialogHeader className="pb-2">
+                  <DialogTitle className="text-lg font-semibold">Nuevo Producto</DialogTitle>
                 </DialogHeader>
                 <NewProductClient
                   productTypes={productTypes}

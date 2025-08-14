@@ -133,7 +133,7 @@ export default async function Page() {
             <QuickActionCard
               title="Nuevo Producto"
               icon={Package}
-              href="/inventory/products/new"
+              href="/inventory/products"
               variant="outline"
             />
             

@@ -35,6 +35,7 @@ import {
   Settings
 } from "lucide-react"
 import Link from "next/link"
+import { TableCell } from '@/components/ui/table'
 
 export default async function InventoryPage() {
   const session = await getSession();
@@ -132,7 +133,7 @@ export default async function InventoryPage() {
                 <QuickActionCard
                   title="Nuevo Producto"
                   icon={Plus}
-                  href="/inventory/products/new"
+                  href="/inventory/products"
                 />
                 <QuickActionCard
                   title="Ver Productos"

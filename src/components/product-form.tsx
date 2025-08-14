@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
 import { ColorSelector } from "@/components/ui/color-selector";
 
 export type ProductFormProps = {
@@ -64,19 +63,19 @@ export function ProductForm({ product, productTypes, suppliers, phoneModels, onS
 
   return (
     <div className="w-full max-w-none p-0">
-      <form className="space-y-6 w-full" onSubmit={handleSubmit}>
-          <div className="flex flex-col md:flex-row gap-8">
+      <form className="space-y-4 w-full" onSubmit={handleSubmit}>
+          <div className="flex flex-col md:flex-row gap-6">
             {/* Imagen */}
             <div className="md:w-1/3 flex flex-col items-center justify-start gap-4">
               <label className="block text-sm font-medium mb-1 w-full">Imagen</label>
               <Input name="image" type="file" accept="image/*" onChange={handleChange} disabled={loading || submitting} className="w-full" />
               {imagePreview && (
-                <img src={imagePreview} alt="Vista previa" className="mt-2 rounded-xl border border-muted shadow-md max-h-48 w-auto object-contain bg-white" />
+                <img src={imagePreview} alt="Vista previa" className="mt-2 rounded-lg border border-muted shadow-sm max-h-40 w-auto object-contain bg-white" />
               )}
             </div>
 
             {/* Campos */}
-            <div className="md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Modelo</label>
               <Select value={form.phoneModelId} onValueChange={(v) => handleSelect("phoneModelId", v)}>
@@ -135,19 +134,28 @@ export function ProductForm({ product, productTypes, suppliers, phoneModels, onS
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Precio mayorista (BOB)</label>
-              <Input name="priceWholesale" type="number" value={form.priceWholesale} onChange={handleChange} min={0} step="0.01" required disabled={loading || submitting} />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Bs.</span>
+                <Input name="priceWholesale" type="number" value={form.priceWholesale} onChange={handleChange} min={0} step="0.01" required disabled={loading || submitting} className="pl-8" />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Precio minorista (BOB)</label>
-              <Input name="priceRetail" type="number" value={form.priceRetail} onChange={handleChange} min={0} step="0.01" required disabled={loading || submitting} />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Bs.</span>
+                <Input name="priceRetail" type="number" value={form.priceRetail} onChange={handleChange} min={0} step="0.01" required disabled={loading || submitting} className="pl-8" />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Precio costo (BOB)</label>
-              <Input name="costPrice" type="number" value={form.costPrice} onChange={handleChange} min={0} step="0.01" required disabled={loading || submitting} />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Bs.</span>
+                <Input name="costPrice" type="number" value={form.costPrice} onChange={handleChange} min={0} step="0.01" required disabled={loading || submitting} className="pl-8" />
+              </div>
             </div>
           </div>
           </div>
-          <div className="pt-4">
+          <div className="pt-3 flex justify-end">
             <Button type="submit" disabled={loading || submitting}>
               {submitting || loading ? "Guardando..." : "Guardar Producto"}
             </Button>

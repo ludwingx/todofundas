@@ -66,10 +66,6 @@ const data = {
           title: "Productos",
           url: "/inventory/products",
         },
-        {
-          title: "Nuevo Producto",
-          url: "/inventory/products/new",
-        },
       ],
     },
     {
