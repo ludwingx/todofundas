@@ -58,6 +58,11 @@ const data = {
       ],
     },
     {
+      title: "Modelos Teléfono",
+      url: "/phone-models",
+      icon: Smartphone,
+    },
+    {
       title: "Inventario",
       url: "/inventory",
       icon: Package,
@@ -65,6 +70,10 @@ const data = {
         {
           title: "Productos",
           url: "/inventory/products",
+        },
+        {
+          title: "Proveedores",
+          url: "/inventory/providers",
         },
       ],
     },

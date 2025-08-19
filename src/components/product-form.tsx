@@ -18,7 +18,8 @@ export function ProductForm({ product, productTypes, suppliers, phoneModels, onS
   const [form, setForm] = useState({
     phoneModelId: product?.phoneModelId || "",
     typeId: product?.typeId || "",
-    supplierId: product?.supplierId || "",
+    // Use a sentinel value for "Sin proveedor" because SelectItem cannot have empty string
+    supplierId: (product?.supplierId ?? "__none__"),
     color: product?.color || "",
     stock: product?.stock || 0,
     minStock: product?.minStock || 5,
@@ -55,7 +56,13 @@ export function ProductForm({ product, productTypes, suppliers, phoneModels, onS
     // Usar FormData para enviar imagen + datos
     const formData = new FormData();
     formData.append('name', generatedName);
-    Object.entries(form).forEach(([key, value]) => formData.append(key, value as string));
+    Object.entries(form).forEach(([key, value]) => {
+      if (key === 'supplierId') {
+        // If sentinel selected, omit supplierId so backend stores null
+        if (value === '__none__') return;
+      }
+      formData.append(key, value as string);
+    });
     if (imageFile) formData.append('image', imageFile);
     await onSubmit(formData);
     setSubmitting(false);
@@ -109,6 +116,7 @@ export function ProductForm({ product, productTypes, suppliers, phoneModels, onS
                   <SelectValue placeholder="Seleccionar proveedor" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">Sin proveedor</SelectItem>
                   {suppliers.map((s) => (
                     <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                   ))}

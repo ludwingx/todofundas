@@ -35,7 +35,6 @@ import {
   Settings
 } from "lucide-react"
 import Link from "next/link"
-import { TableCell } from '@/components/ui/table'
 
 export default async function InventoryPage() {
   const session = await getSession();
@@ -171,9 +170,7 @@ export default async function InventoryPage() {
                           timestamp={activity.timestamp}
                           icon={activity.type === 'entrada' ? Plus : activity.type === 'venta' ? TrendingDown : AlertTriangle}
                           iconColor={activity.type === 'entrada' ? 'text-green-600' : activity.type === 'venta' ? 'text-blue-600' : 'text-orange-600'}
-                        >
-                          <TableCell>Bs. {activity.priceRetail.toFixed(2)}</TableCell>
-                        </ActivityItem>
+                        />
                       ))
                     ) : (
                       <div className="py-8 text-center">

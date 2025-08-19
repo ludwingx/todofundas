@@ -18,10 +18,12 @@ import {
 } from "@/components/ui/sidebar"
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import NewProductClient from "./NewProductClient";
+import ProductEditDialog from "./ProductEditDialog";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
-import { Plus, Search, Filter, Edit, Trash2, Package, Image as ImageIcon } from "lucide-react"
+import { Plus, Search, Filter, Edit, Package, Image as ImageIcon, Trash2 } from "lucide-react"
+import { DeleteModal } from "@/components/ui/delete-modal"
 import Link from "next/link"
 import {
   Table,
@@ -50,6 +52,7 @@ export default async function ProductsPage() {
 
   // Obtener productos reales de la base de datos
   const products = await prisma.product.findMany({
+    where: { status: 'active' },
     include: {
       supplier: { select: { name: true } },
       type: { select: { name: true } }
@@ -104,7 +107,14 @@ export default async function ProductsPage() {
                 Gestiona tu catálogo de fundas y protectores
               </p>
             </div>
-            <Dialog>
+            <div className="flex items-center gap-2">
+              <Link href="/inventory/products/deleted">
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Eliminados</span>
+                </Button>
+              </Link>
+              <Dialog>
               <DialogTrigger asChild>
                 <button className="px-4 py-2 rounded bg-primary text-primary-foreground font-semibold shadow hover:bg-primary/90 transition text-sm">
                   + Nuevo Producto
@@ -120,7 +130,8 @@ export default async function ProductsPage() {
                   phoneModels={phoneModels}
                 />
               </DialogContent>
-            </Dialog>
+              </Dialog>
+            </div>
           </div>
 
           {/* Filters and Search */}
@@ -150,7 +161,7 @@ export default async function ProductsPage() {
                   <TableHead>Estado</TableHead>
                   <TableHead>Precio</TableHead>
                   <TableHead>Proveedor</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="text-right whitespace-nowrap min-w-[140px] shrink-0">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -175,7 +186,7 @@ export default async function ProductsPage() {
                         <div className="font-medium">{product.name}</div>
                         <div className="text-xs text-muted-foreground">{product.color}</div>
                       </TableCell>
-                      <TableCell>{product.type.name}</TableCell>
+                      <TableCell>{product.type?.name || 'N/A'}</TableCell>
                       <TableCell>
                         <span className={`font-semibold ${
                           product.stock === 0 ? 'text-red-600' : 
@@ -198,20 +209,31 @@ export default async function ProductsPage() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell>Bs. {product.priceRetail.toFixed(2)}</TableCell>
+                      <TableCell>
+                        Bs. {typeof product.priceRetail === 'number' ? product.priceRetail.toFixed(2) : '0.00'}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {product.supplier?.name || 'N/A'}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="icon" asChild>
-                            <Link href={`/inventory/products/${product.id}/edit`}>
-                              <Edit className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                      <TableCell className="text-right whitespace-nowrap min-w-[140px] shrink-0">
+                        <div className="flex items-center justify-end gap-2 shrink-0">
+                          <ProductEditDialog
+                            product={product}
+                            productTypes={productTypes}
+                            suppliers={suppliers}
+                            phoneModels={phoneModels}
+                          />
+                          <DeleteModal
+                            title="Eliminar producto"
+                            message={`¿Eliminar "${product.name}"?`}
+                            deleteUrl={`/api/products/${product.id}`}
+                            successText={`Producto "${product.name}" eliminado`}
+                            trigger={
+                              <Button variant="ghost" size="icon" className="group" title="Eliminar">
+                                <Trash2 className="h-4 w-4 text-slate-600 group-hover:text-red-600 transition-colors" />
+                              </Button>
+                            }
+                          />
                         </div>
                       </TableCell>
                     </TableRow>

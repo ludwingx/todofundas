@@ -92,7 +92,7 @@ export default async function Page() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               title="Ventas del Mes"
-              value={`$${metrics.sales.monthlyRevenue.toLocaleString()}`}
+              value={`Bs. ${metrics.sales.monthlyRevenue.toLocaleString()}`}
               description={`${metrics.sales.monthlyTransactions} transacciones`}
               icon={DollarSign}
               iconColor="text-green-500"
@@ -107,7 +107,7 @@ export default async function Page() {
             
             <MetricCard
               title="Valor Inventario"
-              value={`$${metrics.inventory.totalValue.toLocaleString()}`}
+              value={`Bs. ${metrics.inventory.totalValue.toLocaleString()}`}
               description="Valor total del stock"
               icon={BarChart3}
             />
@@ -195,7 +195,7 @@ export default async function Page() {
                             index === 3 ? 'bg-purple-500' :
                             'bg-gray-500'
                           }`}></div>
-                          <span className="text-sm">{product.name} {product.model}</span>
+                          <span className="text-sm">{product.name} {product.phoneModel?.name}</span>
                         </div>
                         <div className="text-right">
                           <span className="text-sm font-medium">{product.totalSold} vendidos</span>

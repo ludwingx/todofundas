@@ -1,6 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// GET /api/products - lista productos activos
+export async function GET(req: NextRequest) {
+  try {
+    const products = await prisma.product.findMany({
+      where: { status: 'active' },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        phoneModel: true,
+        type: true,
+        supplier: true,
+      },
+    });
+    return NextResponse.json(products);
+  } catch (error) {
+    console.error('Error listando productos:', error);
+    return NextResponse.json({ error: 'Error en el servidor' }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
