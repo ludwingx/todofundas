@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { prisma } from '@/lib/prisma'
+import { getColorName } from '@/lib/color-utils'
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -51,19 +52,38 @@ export default async function ProductsPage() {
   }
 
   // Obtener productos reales de la base de datos
-  const products = await prisma.product.findMany({
+  // First get all active products with their relations
+  const productsData = await prisma.product.findMany({
     where: { status: 'active' },
     include: {
-      supplier: { select: { name: true } },
-      type: { select: { name: true } }
+      supplier: { 
+        select: { id: true, name: true, status: true },
+      },
+      type: { 
+        select: { id: true, name: true } 
+      },
+      phoneModel: { 
+        select: { id: true, name: true, status: true }
+      }
     },
     orderBy: { createdAt: 'desc' }
   });
+
+  // Process the products to handle deleted phone models and create display names
+  const products = productsData.map(product => ({
+    ...product,
+    // If phoneModel is deleted, set it to null
+    phoneModel: product.phoneModel?.status === 'active' ? product.phoneModel : null,
+    // Create a display name using type and phone model
+    displayName: `${product.type?.name || 'Sin Tipo'} ${product.phoneModel?.name || 'Sin Modelo'}`.trim()
+  }));
 
   // Obtener tipos, proveedores y modelos
   const productTypes = await prisma.productType.findMany({ select: { id: true, name: true } });
   const suppliers = await prisma.supplier.findMany({ select: { id: true, name: true } });
   const phoneModels = await prisma.phoneModel.findMany({ select: { id: true, name: true } });
+
+  console.log(products);
 
   return (
     <SidebarProvider>
@@ -80,7 +100,7 @@ export default async function ProductsPage() {
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink href="/dashboard">
-                    TodoFundas
+                  FundaMania
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
@@ -115,21 +135,22 @@ export default async function ProductsPage() {
                 </Button>
               </Link>
               <Dialog>
-              <DialogTrigger asChild>
-                <button className="px-4 py-2 rounded bg-primary text-primary-foreground font-semibold shadow hover:bg-primary/90 transition text-sm">
-                  + Nuevo Producto
-                </button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl p-4">
-                <DialogHeader className="pb-2">
-                  <DialogTitle className="text-lg font-semibold">Nuevo Producto</DialogTitle>
-                </DialogHeader>
-                <NewProductClient
-                  productTypes={productTypes}
-                  suppliers={suppliers}
-                  phoneModels={phoneModels}
-                />
-              </DialogContent>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Registrar Producto</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-2xl p-4">
+                  <DialogHeader className="pb-2">
+                    <DialogTitle className="text-lg font-semibold">Registrar Producto</DialogTitle>
+                  </DialogHeader>
+                  <NewProductClient
+                    productTypes={productTypes}
+                    suppliers={suppliers}
+                    phoneModels={phoneModels}
+                  />
+                </DialogContent>
               </Dialog>
             </div>
           </div>
@@ -137,7 +158,6 @@ export default async function ProductsPage() {
           {/* Filters and Search */}
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar productos..."
                 className="pl-8"
@@ -173,7 +193,7 @@ export default async function ProductsPage() {
                           {product.imageUrl ? (
                             <Image 
                               src={product.imageUrl} 
-                              alt={product.name} 
+                              alt={product.displayName} 
                               fill
                               className="rounded-md object-cover"
                             />
@@ -183,10 +203,24 @@ export default async function ProductsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{product.name}</div>
-                        <div className="text-xs text-muted-foreground">{product.color}</div>
+                        <div className="font-medium">
+                          {product.displayName}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {product.type?.name || 'Sin Tipo'}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className="inline-block w-5 h-5 rounded-full border border-muted shadow"
+                            style={{ backgroundColor: product.color }}
+                            title={getColorName(product.color)}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            {getColorName(product.color)}
+                          </span>
+                        </div>
                       </TableCell>
-                      <TableCell>{product.type?.name || 'N/A'}</TableCell>
+                      <TableCell>{!product.type ? 'Sin Tipo' : product.type.name || 'Sin Tipo'}</TableCell>
                       <TableCell>
                         <span className={`font-semibold ${
                           product.stock === 0 ? 'text-red-600' : 
@@ -213,8 +247,8 @@ export default async function ProductsPage() {
                         Bs. {typeof product.priceRetail === 'number' ? product.priceRetail.toFixed(2) : '0.00'}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {product.supplier?.name || 'N/A'}
-                      </TableCell>
+                    {!product.supplier || product.supplier.status === 'deleted' ? 'Sin Proveedor' : product.supplier.name || 'Sin Proveedor'}
+                  </TableCell>
                       <TableCell className="text-right whitespace-nowrap min-w-[140px] shrink-0">
                         <div className="flex items-center justify-end gap-2 shrink-0">
                           <ProductEditDialog
@@ -225,9 +259,9 @@ export default async function ProductsPage() {
                           />
                           <DeleteModal
                             title="Eliminar producto"
-                            message={`¿Eliminar "${product.name}"?`}
+                            message={`¿Eliminar "${product.displayName}"?`}
                             deleteUrl={`/api/products/${product.id}`}
-                            successText={`Producto "${product.name}" eliminado`}
+                            successText={`Producto "${product.displayName}" eliminado`}
                             trigger={
                               <Button variant="ghost" size="icon" className="group" title="Eliminar">
                                 <Trash2 className="h-4 w-4 text-slate-600 group-hover:text-red-600 transition-colors" />
@@ -252,20 +286,28 @@ export default async function ProductsPage() {
           {/* Summary Stats */}
           <div className="grid gap-4 md:grid-cols-4">
             <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
-              <div className="text-2xl font-bold text-green-600">{products.filter(p => p.stock > 5).length}</div>
-              <p className="text-xs text-muted-foreground">Productos en stock</p>
+              <div className="text-2xl font-bold text-green-600">
+                {products.reduce((sum, product) => sum + (product.stock > 5 ? product.stock : 0), 0).toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">Unidades en stock</p>
             </div>
             <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
-              <div className="text-2xl font-bold text-orange-600">{products.filter(p => p.stock > 0 && p.stock <= 5).length}</div>
-              <p className="text-xs text-muted-foreground">Bajo stock</p>
+              <div className="text-2xl font-bold text-orange-600">
+                {products.reduce((sum, product) => sum + (product.stock > 0 && product.stock <= 5 ? product.stock : 0), 0).toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">Unidades en bajo stock</p>
             </div>
             <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
-              <div className="text-2xl font-bold text-red-600">{products.filter(p => p.stock === 0).length}</div>
-              <p className="text-xs text-muted-foreground">Sin stock</p>
+              <div className="text-2xl font-bold text-red-600">
+                {products.filter(p => p.stock === 0).length}
+              </div>
+              <p className="text-xs text-muted-foreground">Productos sin stock</p>
             </div>
             <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
-              <div className="text-2xl font-bold">{products.length}</div>
-              <p className="text-xs text-muted-foreground">Total productos</p>
+              <div className="text-2xl font-bold">
+                {products.reduce((sum, product) => sum + product.stock, 0).toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">Total unidades en inventario</p>
             </div>
           </div>
         </div>

@@ -13,10 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TodoFundas - Gestión de Stock",
+  title: "FundaMania - Gestión de Stock",
   description: "Sistema de gestión de inventario para fundas y protectores de celular",
   keywords: ["fundas", "protectores", "celular", "inventario", "stock", "ventas"],
-  authors: [{ name: "TodoFundas Team" }]
+  authors: [{ name: "Ludwing Dev" }]
 };
 
 export const viewport = {

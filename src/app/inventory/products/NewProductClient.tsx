@@ -2,10 +2,11 @@
 import { useState } from "react";
 import { ProductForm } from '@/components/product-form';
 
-export default function NewProductClient({ productTypes, suppliers, phoneModels }: {
+export default function NewProductClient({ productTypes, suppliers, phoneModels, onSuccess }: {
   productTypes: { id: string; name: string }[];
   suppliers: { id: string; name: string }[];
   phoneModels: { id: string; name: string }[];
+  onSuccess?: () => void;
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -18,8 +19,9 @@ export default function NewProductClient({ productTypes, suppliers, phoneModels 
       });
       const resJson = await result.json();
       if (resJson.success) {
-        alert('Producto creado exitosamente');
-        // Aquí puedes limpiar el formulario o cerrar el modal si lo deseas
+        const { toast } = await import('sonner');
+        toast.success('Producto creado exitosamente');
+        window.location.reload();
       } else {
         alert(resJson.error || 'Error al crear el producto');
       }

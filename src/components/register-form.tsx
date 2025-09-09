@@ -43,11 +43,11 @@ export function RegisterForm({
               <div className="flex flex-col items-center text-center">
                 <div className="flex items-center mb-4">
                   <Package className="h-8 w-8 text-primary mr-2" />
-                  <h1 className="text-2xl font-bold">TodoFundas</h1>
+                  <h1 className="text-2xl font-bold">FundaMania</h1>
                 </div>
                 <h2 className="text-xl font-semibold">Crear cuenta</h2>
                 <p className="text-muted-foreground text-balance">
-                  Únete a TodoFundas y gestiona tu inventario
+                  Únete a FundaMania y gestiona tu inventario
                 </p>
               </div>
 
@@ -118,7 +118,7 @@ export function RegisterForm({
           <div className="bg-muted relative hidden md:block">
             <img
               src="/img/cellphoneLogin.png"
-              alt="Registro TodoFundas"
+              alt="Registro FundaMania"
               className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
             />
           </div>

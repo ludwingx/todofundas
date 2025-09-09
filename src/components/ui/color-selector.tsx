@@ -4,12 +4,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ChevronsUpDown } from "lucide-react";
 
-export type ColorOption = {
+export interface ColorOption {
   name: string;
-  value: string; // HEX or CSS color
-};
+  value: string;
+}
 
-const DEFAULT_COLORS: ColorOption[] = [
+export const DEFAULT_COLORS: ColorOption[] = [
   { name: "Negro", value: "#222" },
   { name: "Blanco", value: "#fff" },
   { name: "Rojo", value: "#e53935" },
@@ -45,8 +45,8 @@ export function ColorSelector({
   required = false,
 }: {
   name: string;
-  value?: string;
-  onChange?: (color: string) => void;
+  value: string;
+  onChange: (value: string) => void;
   colors?: ColorOption[];
   required?: boolean;
 }) {

@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pencil, Trash2, Save, X, Plus } from "lucide-react";
+import { Pencil, Trash2, Save, X, Plus, Undo } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   Select,
@@ -17,7 +18,9 @@ type PhoneModel = { id: string; name: string; status: string };
 
 export default function PhoneModelsClient() {
   const [models, setModels] = useState<PhoneModel[]>([]);
+  const [deletedCount, setDeletedCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -26,9 +29,12 @@ export default function PhoneModelsClient() {
   const [page, setPage] = useState<number>(1);
   const filtered = useMemo(() => {
     const q = newName.trim().toLowerCase();
-    if (!q) return models;
-    return models.filter((m) => m.name.toLowerCase().includes(q));
-  }, [models, newName]);
+    // Filter by search term and status
+    return models.filter(model => 
+      model.name.toLowerCase().includes(q) && 
+      (showDeleted ? model.status === 'deleted' : model.status !== 'deleted')
+    );
+  }, [models, newName, showDeleted]);
 
   const totalPages = useMemo(() => {
     return Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -44,17 +50,40 @@ export default function PhoneModelsClient() {
     setPage(1);
   }, [newName, pageSize, models.length]);
 
+  // Load data when showDeleted changes
+  useEffect(() => {
+    load();
+  }, [showDeleted]);
+
+  // Load deleted count
+  useEffect(() => {
+    async function fetchDeletedCount() {
+      try {
+        const res = await fetch("/api/phone-models/count?status=deleted");
+        const data = await res.json();
+        if (typeof data.count === 'number') {
+          setDeletedCount(data.count);
+        }
+      } catch (e) {
+        console.error("Error loading deleted count:", e);
+      }
+    }
+    fetchDeletedCount();
+  }, [models]);
+
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch("/api/phone-models", { cache: "no-store" });
+      const url = `/api/phone-models${showDeleted ? '?status=deleted' : ''}`;
+      const res = await fetch(url, { cache: "no-store" });
       const data = await res.json();
       if (Array.isArray(data)) setModels(data);
       else toast.error("Error", { description: data.error || "No se pudo cargar modelos" });
     } catch (e) {
       toast.error("Error de red", { description: "No se pudo obtener la lista" });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => { load(); }, []);
@@ -133,6 +162,45 @@ export default function PhoneModelsClient() {
     }
   }
 
+  async function restoreModel(id: string) {
+    try {
+      const res = await fetch(`/api/phone-models/${id}/restore`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        toast.success("Modelo restaurado");
+        load();
+        // Refresh deleted count
+        const countRes = await fetch("/api/phone-models/count?status=deleted");
+        const data = await countRes.json();
+        if (typeof data.count === 'number') {
+          setDeletedCount(data.count);
+        }
+      } else {
+        const error = await res.json();
+        toast.error("Error", { description: error.error || "No se pudo restaurar el modelo" });
+      }
+    } catch (e) {
+      toast.error("Error de red", { description: "No se pudo restaurar el modelo" });
+    }
+  }
+
+  async function deleteModel(id: string) {
+    const params = new URLSearchParams({ id });
+    try {
+      const res = await fetch(`/api/phone-models?${params}`, { method: "DELETE" });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Modelo eliminado");
+        setModels((prev) => prev.filter((m) => m.id !== id));
+      } else {
+        toast.error("No se pudo eliminar", { description: data.error });
+      }
+    } catch (e) {
+      toast.error("Error de red", { description: "Intenta nuevamente" });
+    }
+  }
+
   return (
     <div className="space-y-4 max-w-4xl w-full mx-auto">
       <div className="flex gap-2 items-center">
@@ -146,6 +214,14 @@ export default function PhoneModelsClient() {
         <Button className="ml-2" onClick={createModel} disabled={creating || !newName.trim()}>
           <Plus className="h-4 w-4 mr-2" />
           Agregar
+        </Button>
+        <Button 
+          variant={showDeleted ? "default" : "outline"} 
+          onClick={() => setShowDeleted(!showDeleted)}
+          className="flex items-center"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          {showDeleted ? 'Ver Activos' : `Ver Eliminados (${deletedCount})`}
         </Button>
       </div>
 
@@ -165,28 +241,28 @@ export default function PhoneModelsClient() {
                 </TableCell>
               </TableRow>
             ) : (
-              pageItems.map((m) => (
-                <TableRow key={m.id}>
+              pageItems.map((model) => (
+                <TableRow key={model.id}>
                   <TableCell>
-                    {editingId === m.id ? (
+                    {editingId === model.id ? (
                       <Input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(m.id); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(model.id); }}
                         className="max-w-md"
                         autoFocus
                       />)
                     : (
-                      <span className="font-medium">{m.name}</span>
+                      <span className="font-medium">{model.name}</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {editingId === m.id ? (
+                    {editingId === model.id ? (
                       <div className="flex justify-end gap-2">
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => saveEdit(m.id)}
+                          onClick={() => saveEdit(model.id)}
                           className="group"
                           title="Guardar"
                         >
@@ -204,24 +280,39 @@ export default function PhoneModelsClient() {
                       </div>
                     ) : (
                       <div className="flex justify-end gap-2">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => startEdit(m)}
-                          className="group"
-                          title="Editar"
-                        >
-                          <Pencil className="h-4 w-4 text-slate-600 group-hover:text-blue-600 transition-colors" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => remove(m.id)}
-                          className="group"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="h-4 w-4 text-slate-600 group-hover:text-red-600 transition-colors" />
-                        </Button>
+                        {model.status === 'deleted' ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => restoreModel(model.id)}
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            <Undo className="h-4 w-4 mr-1" />
+                            Restaurar
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setEditingId(model.id);
+                                setEditName(model.name);
+                              }}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deleteModel(model.id)}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     )}
                   </TableCell>

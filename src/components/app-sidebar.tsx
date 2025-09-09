@@ -27,15 +27,15 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
-// Navigation data for TodoFundas system
+// Navigation data for Fundamania system
 const data = {
   user: {
     name: "Usuario",
-    email: "usuario@todofundas.com",
+    email: "usuario@fundamania.com",
     avatar: "/avatars/default.jpg",
   },
   company: {
-    name: "TodoFundas",
+    name: "FundaMania",
     logo: Smartphone,
     plan: "Sistema de Gestión",
   },
@@ -66,17 +66,19 @@ const data = {
       title: "Inventario",
       url: "/inventory",
       icon: Package,
-      items: [
-        {
-          title: "Productos",
-          url: "/inventory/products",
-        },
-        {
-          title: "Proveedores",
-          url: "/inventory/providers",
-        },
-      ],
+   
     },
+    {
+      title: "Productos",
+      url: "/inventory/products",
+      icon: Package,
+    },
+    {
+      title: "Proveedores",
+      url: "/inventory/providers",
+      icon: Users,
+    },
+    
     {
       title: "Compras",
       url: "/purchases",
@@ -86,23 +88,6 @@ const data = {
       title: "Reportes",
       url: "/reports",
       icon: FileText,
-    },
-  ],
-  quickAccess: [
-    {
-      name: "Nueva Venta",
-      url: "/sales/new",
-      icon: ShoppingCart,
-    },
-    {
-      name: "Nuevo Producto",
-      url: "/inventory/products/new",
-      icon: Package,
-    },
-    {
-      name: "Configuración",
-      url: "/settings",
-      icon: Settings,
     },
   ],
 }
@@ -115,7 +100,6 @@ export function AppSidebar({ user, ...props }: React.ComponentProps<typeof Sideb
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {/* <NavProjects projects={data.quickAccess} /> */}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user || data.user} />

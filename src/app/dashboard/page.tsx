@@ -68,7 +68,7 @@ export default async function Page() {
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink href="/dashboard">
-                    TodoFundas
+                    FundaMania
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
@@ -82,7 +82,7 @@ export default async function Page() {
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           {/* Welcome Section */}
           <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-            <h2 className="text-2xl font-bold tracking-tight">¡Bienvenido {userData.name} 👋 a TodoFundas!</h2>
+            <h2 className="text-2xl font-bold tracking-tight">¡Bienvenido {userData.name} 👋 a FundaMania!</h2>
             <p className="text-muted-foreground mt-2">
               Sistema de gestión para fundas y protectores de pantalla.
             </p>

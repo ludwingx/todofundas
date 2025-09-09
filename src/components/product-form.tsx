@@ -45,17 +45,17 @@ export function ProductForm({ product, productTypes, suppliers, phoneModels, onS
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  // Generar nombre dinámicamente
+  // Get selected type and model for display purposes only
   const selectedType = productTypes.find((t) => t.id === form.typeId)?.name || "";
   const selectedModel = phoneModels.find((m) => m.id === form.phoneModelId)?.name || "";
-  const generatedName = selectedType && selectedModel ? `${selectedType} - ${selectedModel}` : "";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    // Usar FormData para enviar imagen + datos
+    // Use FormData to send image + data
     const formData = new FormData();
-    formData.append('name', generatedName);
+    
+    // Add all form fields except name (removed from schema)
     Object.entries(form).forEach(([key, value]) => {
       if (key === 'supplierId') {
         // If sentinel selected, omit supplierId so backend stores null
@@ -63,9 +63,17 @@ export function ProductForm({ product, productTypes, suppliers, phoneModels, onS
       }
       formData.append(key, value as string);
     });
-    if (imageFile) formData.append('image', imageFile);
-    await onSubmit(formData);
-    setSubmitting(false);
+    
+    // Add image if provided
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+    
+    try {
+      await onSubmit(formData);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -165,7 +173,7 @@ export function ProductForm({ product, productTypes, suppliers, phoneModels, onS
           </div>
           <div className="pt-3 flex justify-end">
             <Button type="submit" disabled={loading || submitting}>
-              {submitting || loading ? "Guardando..." : "Guardar Producto"}
+              {submitting || loading ? "Guardando..." : (product ? "Guardar cambios" : "Registrar Producto")}
             </Button>
           </div>
       </form>

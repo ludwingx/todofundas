@@ -30,10 +30,13 @@ export async function PATCH(req: NextRequest) {
 }
 
 // GET /api/phone-models: lista todos los modelos activos
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+
     const models = await prisma.phoneModel.findMany({
-      where: { status: 'active' },
+      where: status ? { status } : { status: 'active' },
       orderBy: { name: 'asc' },
     });
     return NextResponse.json(models);

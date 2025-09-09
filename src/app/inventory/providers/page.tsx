@@ -58,7 +58,7 @@ export default async function ProvidersPage() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">TodoFundas</BreadcrumbLink>
+                  <BreadcrumbLink href="/dashboard">FundaMania</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
