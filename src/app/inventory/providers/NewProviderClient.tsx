@@ -42,11 +42,11 @@ export default function NewProviderClient({ onCreated }: { onCreated?: () => voi
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="text-xs text-muted-foreground">Nombre</label>
-          <Input name="name" value={form.name} onChange={handleChange} placeholder="Nombre del proveedor" />
+          <Input name="name" value={form.name} onChange={handleChange} placeholder="Ingresa el nombre del proveedor" />
         </div>
         <div>
           <label className="text-xs text-muted-foreground">Contacto</label>
-          <Input name="contact" value={form.contact} onChange={handleChange} placeholder="Persona de contacto" />
+          <Input name="contact" value={form.contact} onChange={handleChange} placeholder="Ingresa el nombre del contacto" />
         </div>
         <div>
           <label className="text-xs text-muted-foreground">Email</label>
@@ -54,11 +54,11 @@ export default function NewProviderClient({ onCreated }: { onCreated?: () => voi
         </div>
         <div>
           <label className="text-xs text-muted-foreground">Teléfono</label>
-          <Input name="phone" value={form.phone} onChange={handleChange} placeholder="70000000" />
+          <Input name="phone" value={form.phone} onChange={handleChange} placeholder="7070070" />
         </div>
         <div className="sm:col-span-2">
           <label className="text-xs text-muted-foreground">Dirección</label>
-          <Input name="address" value={form.address} onChange={handleChange} placeholder="Calle y número" />
+          <Input name="address" value={form.address} onChange={handleChange} placeholder="Avenida, calle, número" />
         </div>
       </div>
       <div className="flex justify-end gap-2">

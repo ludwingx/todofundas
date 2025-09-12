@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation'
+import Link from "next/link"
 import { getSession } from '@/app/actions/auth'
 import { prisma } from '@/lib/prisma'
+
+// Componentes de UI
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -18,9 +21,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import Link from "next/link"
 import { DeleteModal } from "@/components/ui/delete-modal"
-import { Users, Edit, Trash2, Plus, Search, Filter } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -29,9 +30,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+
+// Iconos
+import { Users, Edit, Trash2, Plus, Search, Filter } from "lucide-react"
+
+// Componentes de cliente
 import NewProviderClient from "./NewProviderClient"
 import EditProviderClient from "./EditProviderClient"
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default async function ProvidersPage() {
   const session = await getSession()
@@ -88,9 +94,9 @@ export default async function ProvidersPage() {
               </Link>
               <Dialog>
                 <DialogTrigger asChild>
-                  <button className="px-4 py-2 rounded bg-primary text-primary-foreground font-semibold shadow hover:bg-primary/90 transition text-sm">
+                  <Button variant="outline"  className="px-4 py-2 rounded bg-primary text-primary-foreground font-semibold shadow hover:bg-primary/90 hover:text-white transition text-sm ">
                     <Plus className="mr-2 h-4 w-4 inline" /> Nuevo Proveedor
-                  </button>
+                  </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-lg p-4">
                   <DialogHeader className="pb-2">
@@ -138,14 +144,14 @@ export default async function ProvidersPage() {
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button variant="ghost" size="icon" title="Editar">
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-4 w-4"color="blue" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="sm:max-w-lg p-4">
                             <DialogHeader className="pb-2">
                               <DialogTitle className="text-lg font-semibold">Editar Proveedor</DialogTitle>
                             </DialogHeader>
-                            <EditProviderClient provider={p} />
+                            <EditProviderClient provider={p}  />
                           </DialogContent>
                         </Dialog>
                         {/* Delete */}
@@ -156,7 +162,7 @@ export default async function ProvidersPage() {
                           successText={`Proveedor "${p.name}" eliminado`}
                           trigger={
                             <Button variant="ghost" size="icon" title="Eliminar">
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 " color="red" />
                             </Button>
                           }
                         />
