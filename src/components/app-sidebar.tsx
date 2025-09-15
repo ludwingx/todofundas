@@ -47,47 +47,48 @@ const data = {
       isActive: true,
     },
     {
-      title: "Punto de Venta",
-      url: "/sales",
+      title: "Ventas",
       icon: ShoppingCart,
+      url: "/sales",
       items: [
         {
           title: "Nueva Venta",
-          url: "/sales/new",
+          url: "/sales/new"
         },
-      ],
-    },
-    {
-      title: "Modelos Teléfono",
-      url: "/phone-models",
-      icon: Smartphone,
+        {
+          title: "Historial",
+          url: "/sales"
+        }
+      ]
     },
     {
       title: "Inventario",
+      icon: Package,
       url: "/inventory",
-      icon: Package,
-   
+      items: [
+        {
+          title: "Productos",
+          url: "/inventory/products"
+        },
+        {
+          title: "Modelos",
+          url: "/phone-models"
+        },
+        {
+          title: "Proveedores",
+          url: "/inventory/providers"
+        }
+      ]
     },
-    {
-      title: "Productos",
-      url: "/inventory/products",
-      icon: Package,
-    },
-    {
-      title: "Proveedores",
-      url: "/inventory/providers",
-      icon: Users,
-    },
-    
     {
       title: "Compras",
-      url: "/purchases",
       icon: ShoppingBag,
+      url: "/purchases"
     },
     {
       title: "Reportes",
-      url: "/reports",
       icon: FileText,
+      url: "/reports"
     },
   ],
 }

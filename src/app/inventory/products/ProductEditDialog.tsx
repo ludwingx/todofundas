@@ -6,6 +6,7 @@ import { Edit } from "lucide-react";
 import EditProductClient from "./EditProductClient";
 
 export default function ProductEditDialog({
+  trigger,
   product,
   productTypes,
   suppliers,
@@ -15,15 +16,12 @@ export default function ProductEditDialog({
   productTypes: { id: string; name: string }[];
   suppliers: { id: string; name: string }[];
   phoneModels: { id: string; name: string }[];
+  trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Edit className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="sm:max-w-2xl p-4">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-lg font-semibold">Editar Producto</DialogTitle>

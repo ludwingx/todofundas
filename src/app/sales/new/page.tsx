@@ -51,7 +51,6 @@ export default async function NewSalePage() {
     avatar: "/avatars/default.jpg",
   }
 
-  // Mock products data - will be replaced with real database queries
   const availableProducts = [
     {
       id: "1",

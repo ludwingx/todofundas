@@ -15,18 +15,19 @@ export type ProductFormProps = {
 };
 
 export function ProductForm({ product, productTypes, suppliers, phoneModels, onSubmit, loading }: ProductFormProps) {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(() => ({
     phoneModelId: product?.phoneModelId || "",
     typeId: product?.typeId || "",
     // Use a sentinel value for "Sin proveedor" because SelectItem cannot have empty string
     supplierId: (product?.supplierId ?? "__none__"),
     color: product?.color || "",
-    stock: product?.stock || 0,
-    minStock: product?.minStock || 5,
-    priceRetail: product?.priceRetail || "",
-    priceWholesale: product?.priceWholesale || "",
-    costPrice: product?.costPrice || "",
-  });
+    // Convert stock to number and ensure it's a valid number
+    stock: product?.stock ? Number(product.stock) : 0,
+    minStock: product?.minStock ? Number(product.minStock) : 5,
+    priceRetail: product?.priceRetail ? String(product.priceRetail) : "",
+    priceWholesale: product?.priceWholesale ? String(product.priceWholesale) : "",
+    costPrice: product?.costPrice ? String(product.costPrice) : "",
+  }));
   const [submitting, setSubmitting] = useState(false);
   const [imageFile, setImageFile] = useState<File|null>(null);
   const [imagePreview, setImagePreview] = useState<string|null>(null);
@@ -141,8 +142,20 @@ export function ProductForm({ product, productTypes, suppliers, phoneModels, onS
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Stock</label>
-              <Input name="stock" type="number" value={form.stock} onChange={handleChange} min={0} required disabled={loading || submitting} />
+              <div className="flex items-center gap-2">
+                <label className="block text-sm font-medium mb-1">Stock</label>
+                <span className="text-xs text-muted-foreground" title="El stock se actualiza automáticamente con compras y ventas">
+                  (solo lectura)
+                </span>
+              </div>
+              <Input 
+                name="stock" 
+                type="number" 
+                value={form.stock} 
+                readOnly 
+                className="bg-muted/50 cursor-not-allowed"
+                aria-readonly="true"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Stock mínimo</label>

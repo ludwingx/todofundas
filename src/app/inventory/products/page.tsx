@@ -181,7 +181,7 @@ export default async function ProductsPage() {
                   <TableHead>Estado</TableHead>
                   <TableHead>Precio</TableHead>
                   <TableHead>Proveedor</TableHead>
-                  <TableHead className="text-right whitespace-nowrap min-w-[140px] shrink-0">Acciones</TableHead>
+                  <TableHead >Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -249,13 +249,18 @@ export default async function ProductsPage() {
                       <TableCell className="text-sm text-muted-foreground">
                     {!product.supplier || product.supplier.status === 'deleted' ? 'Sin Proveedor' : product.supplier.name || 'Sin Proveedor'}
                   </TableCell>
-                      <TableCell className="text-right whitespace-nowrap min-w-[140px] shrink-0">
+                      <TableCell>
                         <div className="flex items-center justify-end gap-2 shrink-0">
                           <ProductEditDialog
                             product={product}
                             productTypes={productTypes}
                             suppliers={suppliers}
                             phoneModels={phoneModels}
+                            trigger={
+                              <Button variant="ghost" size="icon" className="group" title="Editar">
+                                <Edit className="h-4 w-4 text-slate-600 group-hover:text-blue-600 transition-colors" />
+                              </Button>
+                            }
                           />
                           <DeleteModal
                             title="Eliminar producto"
