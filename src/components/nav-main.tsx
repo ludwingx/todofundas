@@ -2,7 +2,8 @@
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { usePathname } from "next/navigation"
 
 import {
   Collapsible,
@@ -31,13 +32,64 @@ type NavItem = {
   }[]
 }
 
+const STORAGE_KEY = "sidebar-nav-state"
+
+function getStoredState(itemTitle: string): boolean | null {
+  if (typeof window === "undefined") return null
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (!stored) return null
+    const state = JSON.parse(stored)
+    return state[itemTitle] ?? null
+  } catch {
+    return null
+  }
+}
+
+function setStoredState(itemTitle: string, isOpen: boolean) {
+  if (typeof window === "undefined") return
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    const state = stored ? JSON.parse(stored) : {}
+    state[itemTitle] = isOpen
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 function NavMenuItem({ item }: { item: NavItem }) {
-  const [isOpen, setIsOpen] = useState(item.isActive || false)
+  const pathname = usePathname()
+  
+  // Check if current path matches this item or any of its subitems
+  const isCurrentPath = pathname === item.url || 
+    item.items?.some(subItem => pathname === subItem.url || pathname.startsWith(subItem.url + '/'))
+  
+  // Initialize state: stored value > current path match > isActive prop > false
+  const [isOpen, setIsOpen] = useState(() => {
+    const stored = getStoredState(item.title)
+    if (stored !== null) return stored
+    if (isCurrentPath) return true
+    return item.isActive || false
+  })
+
+  // Auto-open if navigating to a subitem
+  useEffect(() => {
+    if (isCurrentPath && !isOpen) {
+      setIsOpen(true)
+      setStoredState(item.title, true)
+    }
+  }, [pathname, isCurrentPath, isOpen, item.title])
+
+  const handleToggle = (newState: boolean) => {
+    setIsOpen(newState)
+    setStoredState(item.title, newState)
+  }
 
   return (
     <Collapsible
       open={isOpen}
-      onOpenChange={setIsOpen}
+      onOpenChange={handleToggle}
       className="group/collapsible"
     >
       <SidebarMenuItem>
@@ -57,7 +109,7 @@ function NavMenuItem({ item }: { item: NavItem }) {
                 className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
                 onClick={(e) => {
                   e.preventDefault()
-                  setIsOpen(!isOpen)
+                  handleToggle(!isOpen)
                 }}
               >
                 <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
