@@ -60,18 +60,27 @@ function setStoredState(itemTitle: string, isOpen: boolean) {
 
 function NavMenuItem({ item }: { item: NavItem }) {
   const pathname = usePathname()
+  const [isMounted, setIsMounted] = useState(false)
   
   // Check if current path matches this item or any of its subitems
   const isCurrentPath = pathname === item.url || 
-    item.items?.some(subItem => pathname === subItem.url || pathname.startsWith(subItem.url + '/'))
+    (item.items?.some(subItem => pathname === subItem.url || pathname.startsWith(subItem.url + '/')) ?? false)
   
-  // Initialize state: stored value > current path match > isActive prop > false
-  const [isOpen, setIsOpen] = useState(() => {
+  // Initialize state as closed by default, will be updated in useEffect
+  const [isOpen, setIsOpen] = useState(false)
+  
+  // Set initial state in useEffect to avoid hydration mismatch
+  useEffect(() => {
+    setIsMounted(true)
     const stored = getStoredState(item.title)
-    if (stored !== null) return stored
-    if (isCurrentPath) return true
-    return item.isActive || false
-  })
+    if (stored !== null) {
+      setIsOpen(stored)
+    } else if (isCurrentPath) {
+      setIsOpen(true)
+    } else {
+      setIsOpen(item.isActive || false)
+    }
+  }, [item.title, isCurrentPath, item.isActive])
 
   // Auto-open if navigating to a subitem
   useEffect(() => {
@@ -97,7 +106,7 @@ function NavMenuItem({ item }: { item: NavItem }) {
           {/* Main navigation link */}
           <SidebarMenuButton asChild tooltip={item.title} className="flex-1">
             <Link href={item.url}>
-              {item.icon && <item.icon />}
+              {item.icon && <item.icon className="h-4 w-4" />}
               <span>{item.title}</span>
             </Link>
           </SidebarMenuButton>
@@ -111,14 +120,16 @@ function NavMenuItem({ item }: { item: NavItem }) {
                   e.preventDefault()
                   handleToggle(!isOpen)
                 }}
+                aria-expanded={isOpen}
+                data-state={isOpen ? "open" : "closed"}
               >
-                <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
               </button>
             </CollapsibleTrigger>
           )}
         </div>
         
-        {item.items && item.items.length > 0 && (
+        {item.items && item.items.length > 0 && isMounted && (
           <CollapsibleContent>
             <SidebarMenuSub>
               {item.items.map((subItem) => (

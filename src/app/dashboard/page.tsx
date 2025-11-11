@@ -1,7 +1,24 @@
-import { redirect } from 'next/navigation'
-import { getSession } from '@/app/actions/auth'
-import { getDashboardMetrics, getRecentActivity, getTopProducts } from '@/lib/dashboard-queries'
-import { AppSidebar } from "@/components/app-sidebar"
+import { redirect } from "next/navigation";
+import { getSession } from "@/app/actions/auth";
+import {
+  getDashboardMetrics,
+  getRecentActivity,
+  getTopProducts,
+} from "@/lib/dashboard-queries";
+
+type TopProduct = {
+  id: string;
+  name: string;
+  phoneModel: {
+    name: string;
+  };
+  color: string | null;
+  stock: number;
+  totalSold: number;
+  salesCount: number;
+};
+
+import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,49 +26,49 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+} from "@/components/ui/breadcrumb";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MetricCard } from "@/components/ui/metric-card"
-import { QuickActionCard } from "@/components/ui/quick-action-card"
-import { ActivityItem } from "@/components/ui/activity-item"
-import { 
-  Plus, 
-  BarChart3, 
-  ShoppingCart, 
-  Package, 
-  TrendingUp, 
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/ui/metric-card";
+import { QuickActionCard } from "@/components/ui/quick-action-card";
+import { ActivityItem } from "@/components/ui/activity-item";
+import {
+  Plus,
+  BarChart3,
+  ShoppingCart,
+  Package,
+  TrendingUp,
   DollarSign,
   AlertTriangle,
   ShoppingBag,
   FileText,
   Edit,
-  ArrowUpDown
-} from "lucide-react"
-import Link from "next/link"
-import { Separator } from '@/components/ui/separator'
+  ArrowUpDown,
+} from "lucide-react";
+import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
 
 export default async function Page() {
-  const session = await getSession()
-  
+  const session = await getSession();
+
   if (!session) {
-    redirect('/login')
+    redirect("/login");
   }
-  
+
   const userData = {
     name: session.name as string,
     email: session.username as string,
     avatar: "/avatars/default.jpg", // Obtener datos reales de la base de datos
-  }
+  };
 
-  const metrics = await getDashboardMetrics()
-  const recentActivity = await getRecentActivity()
-  const topProducts = await getTopProducts()
+  const metrics = await getDashboardMetrics();
+  const recentActivity = await getRecentActivity();
+  const topProducts = await getTopProducts() as unknown as TopProduct[];
 
   return (
     <SidebarProvider>
@@ -67,9 +84,7 @@ export default async function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">
-                    FundaMania
-                  </BreadcrumbLink>
+                  <BreadcrumbLink href="/dashboard">FundaMania</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
@@ -82,7 +97,9 @@ export default async function Page() {
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           {/* Welcome Section */}
           <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-            <h2 className="text-2xl font-bold tracking-tight">¡Bienvenido {userData.name} 👋 a FundaMania!</h2>
+            <h2 className="text-2xl font-bold tracking-tight">
+              ¡Bienvenido {userData.name} 👋 a FundaMania!
+            </h2>
             <p className="text-muted-foreground mt-2">
               Sistema de gestión para fundas y protectores de pantalla.
             </p>
@@ -97,28 +114,32 @@ export default async function Page() {
               icon={DollarSign}
               iconColor="text-green-500"
             />
-            
+
             <MetricCard
               title="Total Productos"
               value={metrics.inventory.totalProducts}
               description="En inventario"
               icon={Package}
             />
-            
+
             <MetricCard
               title="Valor Inventario"
               value={`Bs. ${metrics.inventory.totalValue.toLocaleString()}`}
               description="Valor total del stock"
               icon={BarChart3}
             />
-            
+
             <MetricCard
               title="Stock Bajo"
               value={metrics.inventory.lowStockProducts}
               description={`${metrics.inventory.outOfStockProducts} agotados`}
               icon={AlertTriangle}
               iconColor="text-orange-500"
-              valueColor={metrics.inventory.lowStockProducts > 0 ? "text-orange-600" : "text-foreground"}
+              valueColor={
+                metrics.inventory.lowStockProducts > 0
+                  ? "text-orange-600"
+                  : "text-foreground"
+              }
             />
           </div>
 
@@ -129,21 +150,21 @@ export default async function Page() {
               icon={Plus}
               href="/sales/new"
             />
-            
+
             <QuickActionCard
               title="Nuevo Producto"
               icon={Package}
               href="/inventory/products"
               variant="outline"
             />
-            
+
             <QuickActionCard
               title="Ver Inventario"
               icon={BarChart3}
               href="/inventory"
               variant="outline"
             />
-            
+
             <QuickActionCard
               title="Reportes"
               icon={FileText}
@@ -166,13 +187,27 @@ export default async function Page() {
                         key={activity.id}
                         title={activity.title}
                         description={activity.description}
-                        timestamp={activity.timestamp}
-                        icon={activity.type === 'entrada' ? Plus : activity.type === 'venta' ? ShoppingCart : ArrowUpDown}
-                        iconColor={activity.type === 'entrada' ? 'text-green-600' : activity.type === 'venta' ? 'text-blue-600' : 'text-gray-600'}
+                        timestamp={activity.date}
+                        icon={
+                          activity.type === "entrada"
+                            ? Plus
+                            : activity.type === "venta"
+                            ? ShoppingCart
+                            : ArrowUpDown
+                        }
+                        iconColor={
+                          activity.type === "entrada"
+                            ? "text-green-600"
+                            : activity.type === "venta"
+                            ? "text-blue-600"
+                            : "text-gray-600"
+                        }
                       />
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground py-4">No hay actividad reciente</p>
+                    <p className="text-sm text-muted-foreground py-4">
+                      No hay actividad reciente
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -186,25 +221,43 @@ export default async function Page() {
                 <div className="space-y-3">
                   {topProducts.length > 0 ? (
                     topProducts.map((product, index) => (
-                      <div key={product.id} className="flex items-center justify-between">
+                      <div
+                        key={product.id}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            index === 0 ? 'bg-blue-500' :
-                            index === 1 ? 'bg-green-500' :
-                            index === 2 ? 'bg-orange-500' :
-                            index === 3 ? 'bg-purple-500' :
-                            'bg-gray-500'
-                          }`}></div>
-                          <span className="text-sm">{product.name} {product.phoneModel?.name}</span>
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              index === 0
+                                ? "bg-blue-500"
+                                : index === 1
+                                ? "bg-green-500"
+                                : index === 2
+                                ? "bg-orange-500"
+                                : index === 3
+                                ? "bg-purple-500"
+                                : "bg-gray-500"
+                            }`}
+                          ></div>
+                          <span className="text-sm">
+                            {product.phoneModel.name} {" "}
+                            {product.color ? `- ${product.color}` : ""}
+                          </span>
                         </div>
                         <div className="text-right">
-                          <span className="text-sm font-medium">{product.totalSold} vendidos</span>
-                          <p className="text-xs text-muted-foreground">{product.stock} en stock</p>
+                          <span className="text-sm font-medium">
+                            {product.totalSold} vendidos
+                          </span>
+                          <p className="text-xs text-muted-foreground">
+                            {product.stock} en stock
+                          </p>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground py-4">No hay productos para mostrar</p>
+                    <p className="text-sm text-muted-foreground py-4">
+                      No hay productos para mostrar
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -213,5 +266,5 @@ export default async function Page() {
         </div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

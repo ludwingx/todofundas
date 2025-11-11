@@ -112,10 +112,14 @@ export async function getRecentActivity() {
       orderBy: {
         createdAt: 'desc'
       },
-      include: {
+      select: {
+        id: true,
+        createdAt: true,
+        type: true,
+        quantity: true,
         product: {
           select: {
-            name: true,
+            id: true,
             phoneModel: { select: { name: true } },
             color: true
           }
@@ -134,10 +138,18 @@ export async function getRecentActivity() {
       orderBy: {
         createdAt: 'desc'
       },
-      include: {
+      select: {
+        id: true,
+        customerName: true,
+        customerPhone: true,
+        quantity: true,
+        unitPrice: true,
+        totalPrice: true,
+        paymentMethod: true,
+        createdAt: true,
         product: {
           select: {
-            name: true,
+            id: true,
             phoneModel: { select: { name: true } },
             color: true
           }
@@ -149,29 +161,29 @@ export async function getRecentActivity() {
     const formattedActivity = [
       ...recentMovements.map(movement => ({
         id: movement.id,
-        title: `${movement.type === 'entrada' ? 'Entrada' : 'Salida'} de stock`,
-        description: `${movement.product.name} ${movement.product.phoneModel?.name || ''} - ${Math.abs(movement.quantity)} unidades`,
-        timestamp: movement.createdAt.toLocaleDateString('es-ES', { 
-          month: 'short', 
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        type: movement.type
+        type: movement.type === 'entrada' ? 'entrada' : 'movimiento',
+        date: movement.createdAt.toISOString(),
+        title: movement.type === 'entrada' ? 'Entrada de inventario' : 'Movimiento de inventario',
+        description: `${movement.type === 'entrada' ? 'Ingresaron' : 'Se movieron'} ${movement.quantity} unidades de ${movement.product?.phoneModel?.name || 'producto'} ${movement.product?.color ? `(${movement.product.color})` : ''}`,
+        productName: movement.product?.phoneModel?.name || 'Producto desconocido',
+        productColor: movement.product?.color || 'Sin color',
+        quantity: movement.quantity,
+        movementType: movement.type,
+        userName: movement.user?.name || 'Sistema'
       })),
       ...recentSales.map(sale => ({
         id: sale.id,
-        title: 'Venta realizada',
-        description: `${sale.product.name} ${sale.product.phoneModel?.name || ''} - ${sale.quantity} unidades`,
-        timestamp: sale.createdAt.toLocaleDateString('es-ES', { 
-          month: 'short', 
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        type: 'venta'
+        type: 'venta',
+        date: sale.createdAt.toISOString(),
+        title: 'Venta registrada',
+        description: `Venta de ${sale.quantity} ${sale.quantity === 1 ? 'unidad' : 'unidades'} de ${sale.product?.phoneModel?.name || 'producto'} ${sale.product?.color ? `(${sale.product.color})` : ''} a ${sale.customerName || 'cliente no especificado'}`,
+        productName: sale.product?.phoneModel?.name || 'Producto desconocido',
+        productColor: sale.product?.color || 'Sin color',
+        quantity: sale.quantity,
+        total: sale.totalPrice,
+        customerName: sale.customerName || 'Cliente no especificado'
       }))
-    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 8)
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10)
 
     return formattedActivity
   } catch (error) {
@@ -194,7 +206,6 @@ export async function getTopProducts() {
         },
         select: {
           id: true,
-          name: true,
           phoneModel: { select: { name: true } },
           color: true,
           stock: true,
@@ -234,7 +245,6 @@ export async function getTopProducts() {
       },
       select: {
         id: true,
-        name: true,
         phoneModel: { select: { name: true } },
         color: true,
         stock: true,

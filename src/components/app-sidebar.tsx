@@ -13,6 +13,7 @@ import {
   TrendingUp,
   FileText,
   Smartphone,
+  Palette,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -73,6 +74,10 @@ const data = {
         {
           title: "Modelos",
           url: "/phone-models"
+        },
+        {
+          title: "Colores",
+          url: "/dashboard/colors"
         },
         {
           title: "Proveedores",

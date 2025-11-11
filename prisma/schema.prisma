@@ -52,6 +52,15 @@ model ProductType {
   updatedAt DateTime @updatedAt
 }
 
+model Color {
+  id        String    @id @default(uuid())
+  name      String    @unique // "Negro", "Rojo", etc.
+  hexCode   String    // Código hexadecimal del color, ej: "#000000"
+  status    String    @default("active") // "active" o "deleted"
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
 model Supplier {
   id        String     @id @default(uuid())
   name      String
