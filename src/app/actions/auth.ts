@@ -1,6 +1,5 @@
 'use server'
 
-import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import bcrypt from 'bcryptjs'
 import { SignJWT, jwtVerify } from 'jose'
@@ -135,12 +134,13 @@ export async function createUserAction(formData: FormData) {
     })
 
     return { success: true, userId: user.id }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creando usuario:', error)
+    const err = error as { code?: string; meta?: { target?: string[] }; message?: string } | undefined
     // Si es un error de Prisma por restricción única
-    if (error.code === 'P2002' && error.meta?.target?.includes('username')) {
+    if (err?.code === 'P2002' && err.meta?.target?.includes('username')) {
       return { error: 'El nombre de usuario ya está en uso' }
     }
-    return { error: 'Error interno del servidor: ' + (error.message || error.toString()) }
+    return { error: 'Error interno del servidor: ' + (err?.message || String(error)) }
   }
 }

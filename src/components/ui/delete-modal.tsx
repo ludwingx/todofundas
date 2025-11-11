@@ -17,7 +17,7 @@ type DeleteModalProps = {
   refreshOnSuccess?: boolean
   successText?: string
   errorText?: string
-  payload?: any
+  payload?: unknown
 }
 
 export function DeleteModal({

@@ -48,10 +48,11 @@ export async function registerUser(input: RegisterInput) {
       success: true,
       user: { id: user.id, username: user.username },
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const e = err as { message?: string } | undefined
     return {
       success: false,
-      error: { general: ["Error inesperado: " + (err.message || "")] },
+      error: { general: ["Error inesperado: " + (e?.message || "")] },
     };
   }
 }

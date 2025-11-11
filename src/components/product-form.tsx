@@ -6,11 +6,21 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { ColorSelector } from "@/components/ui/color-selector";
 
 export type ProductFormProps = {
-  product?: any;
+  product?: {
+    phoneModelId?: string;
+    typeId?: string;
+    supplierId?: string | null;
+    color?: string;
+    stock?: number;
+    minStock?: number;
+    priceRetail?: number | string;
+    priceWholesale?: number | string;
+    costPrice?: number | string;
+  };
   productTypes: { id: string; name: string }[];
   suppliers: { id: string; name: string }[];
   phoneModels: { id: string; name: string }[];
-  onSubmit: (data: any) => void | Promise<void>;
+  onSubmit: (data: FormData) => void | Promise<void>;
   loading?: boolean;
 };
 

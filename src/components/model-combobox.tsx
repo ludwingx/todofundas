@@ -152,7 +152,7 @@ export function ModelCombobox({ name, required, value, onChange }: { name: strin
                   onClick={handleAddModel}
                   disabled={loading || !query.trim()}
                 >
-                  Agregar "{query}"
+                  Agregar &quot;{query}&quot;
                 </button>
               </div>
             )}

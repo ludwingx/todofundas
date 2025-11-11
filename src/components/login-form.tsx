@@ -11,14 +11,14 @@ import { useActionState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Package } from "lucide-react"
-import { ModeToggle } from "@/components/mode-toggle"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter()
-  const [state, formAction, pending] = useActionState(async (prevState: any, formData: FormData) => {
+  type Result = { success?: boolean; error?: string } | null
+  const [state, formAction, pending] = useActionState<Result, FormData>(async (_prevState: Result, formData: FormData) => {
     const result = await loginAction(formData)
     if (result?.success) {
       toast.success("¡Inicio de sesión exitoso! Redirigiendo...")

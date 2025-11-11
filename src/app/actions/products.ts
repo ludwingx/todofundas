@@ -3,25 +3,24 @@
 import { prisma } from '@/lib/prisma'
 import { supabase } from '@/lib/supabase'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 
-export async function createProduct(prevState: any, formData: any) {
+export async function createProduct(_prevState: unknown, formData: FormData) {
   try {
-    const name = formData.name as string;
-    const phoneModelId = formData.phoneModelId as string;
-    const color = formData.color as string;
-    const stock = Number(formData.stock);
-    const minStock = formData.minStock !== undefined ? Number(formData.minStock) : 5;
-    const priceRetail = Number(formData.priceRetail);
-    const priceWholesale = Number(formData.priceWholesale);
-    const costPrice = Number(formData.costPrice);
-    const typeId = formData.typeId as string;
-    const supplierId = formData.supplierId || null;
-    const imageFile = formData.image as File;
+    const phoneModelId = String(formData.get('phoneModelId') || '')
+    const color = String(formData.get('color') || '')
+    const stock = Number(formData.get('stock'))
+    const minStock = formData.get('minStock') !== null ? Number(formData.get('minStock')) : 5
+    const priceRetail = Number(formData.get('priceRetail'))
+    const priceWholesale = Number(formData.get('priceWholesale'))
+    const costPrice = Number(formData.get('costPrice'))
+    const typeId = String(formData.get('typeId') || '')
+    const supplierIdRaw = formData.get('supplierId')
+    const supplierId = supplierIdRaw ? String(supplierIdRaw) : null
+    const imageEntry = formData.get('image')
+    const imageFile = imageEntry && typeof imageEntry === 'object' && 'size' in imageEntry ? (imageEntry as File) : null
 
     // LOG: mostrar todos los datos que llegan
     console.log('DEBUG createProduct', {
-      name,
       phoneModelId,
       color,
       stock,
@@ -34,7 +33,7 @@ export async function createProduct(prevState: any, formData: any) {
     });
 
     // Validaciones básicas
-    if (!name || !phoneModelId || !color || isNaN(stock) || isNaN(priceRetail) || isNaN(priceWholesale) || isNaN(costPrice)) {
+    if (!phoneModelId || !color || isNaN(stock) || isNaN(priceRetail) || isNaN(priceWholesale) || isNaN(costPrice)) {
       return { error: 'Todos los campos obligatorios deben ser completados correctamente' }
     }
 
@@ -47,7 +46,7 @@ export async function createProduct(prevState: any, formData: any) {
     if (imageFile && imageFile.size > 0) {
       const fileExtension = imageFile.name.split('.').pop()
       const fileName = `${Date.now()}.${fileExtension}`
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: _uploadData, error: uploadError } = await supabase.storage
         .from('product-images')
         .upload(fileName, imageFile)
 
@@ -80,7 +79,6 @@ export async function createProduct(prevState: any, formData: any) {
     // Crear el producto
     const product = await prisma.product.create({
       data: {
-        name,
         phoneModelId,
         color,
         stock,

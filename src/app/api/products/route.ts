@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import fs from 'fs';
+import path from 'path';
+
+export const runtime = 'nodejs';
 
 // GET /api/products - lista productos activos
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const products = await prisma.product.findMany({
       where: { status: 'active' },
@@ -23,7 +27,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const data: any = {};
+    const data: Record<string, unknown> = {};
     for (const [key, value] of formData.entries()) {
       data[key] = value;
     }
@@ -31,10 +35,9 @@ export async function POST(req: NextRequest) {
     let imageUrl: string | null = null;
     const imageFile = formData.get('image');
     if (imageFile && typeof imageFile === 'object' && 'arrayBuffer' in imageFile) {
-      const buffer = Buffer.from(await imageFile.arrayBuffer());
+      const file = imageFile as File;
+      const buffer = Buffer.from(await file.arrayBuffer());
       const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-      const fs = require('fs');
-      const path = require('path');
       const uploadDir = path.join(process.cwd(), 'public', 'uploads');
       if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
       const filePath = path.join(uploadDir, filename);
@@ -44,7 +47,6 @@ export async function POST(req: NextRequest) {
     // Validación básica (permitir 0 como valor válido)
     console.log('BODY RECIBIDO', data);
     if (
-      !data.name ||
       !data.phoneModelId ||
       !data.typeId ||
       !data.color ||
@@ -55,13 +57,12 @@ export async function POST(req: NextRequest) {
     }
     const product = await prisma.product.create({
       data: {
-        name: data.name,
-        phoneModelId: data.phoneModelId,
-        typeId: data.typeId,
-        supplierId: data.supplierId || null,
-        color: data.color,
+        phoneModelId: String(data.phoneModelId),
+        typeId: String(data.typeId),
+        supplierId: data.supplierId ? String(data.supplierId) : null,
+        color: String(data.color),
         stock: Number(data.stock),
-        minStock: Number(data.minStock) || 5,
+        minStock: data.minStock !== undefined && data.minStock !== null ? Number(data.minStock) : 5,
         priceRetail: Number(data.priceRetail),
         priceWholesale: Number(data.priceWholesale),
         costPrice: Number(data.costPrice),

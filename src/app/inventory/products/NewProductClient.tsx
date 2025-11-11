@@ -10,7 +10,7 @@ export default function NewProductClient({ productTypes, suppliers, phoneModels,
 }) {
   const [loading, setLoading] = useState(false);
 
-  async function handleProductSubmit(data: any) {
+  async function handleProductSubmit(data: FormData) {
     setLoading(true);
     try {
       const result = await fetch('/api/products', {

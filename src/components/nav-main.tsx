@@ -2,7 +2,6 @@
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
 
 import {
   Collapsible,
@@ -39,13 +38,10 @@ export function NavMain({
       <SidebarGroupLabel>Menú</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
-          const [isOpen, setIsOpen] = useState(item.isActive || false)
-          
           return (
             <Collapsible
               key={item.title}
-              open={isOpen}
-              onOpenChange={setIsOpen}
+              defaultOpen={!!item.isActive}
               className="group/collapsible"
             >
               <SidebarMenuItem>
@@ -64,8 +60,8 @@ export function NavMain({
                       <button 
                         className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
                         onClick={(e) => {
+                          // Prevent navigation when toggling submenu
                           e.preventDefault()
-                          setIsOpen(!isOpen)
                         }}
                       >
                         <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -97,3 +93,4 @@ export function NavMain({
     </SidebarGroup>
   )
 }
+

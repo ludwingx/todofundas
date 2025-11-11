@@ -4,18 +4,31 @@ import { useRouter } from "next/navigation";
 import { ProductForm } from '@/components/product-form';
 import { toast } from 'sonner';
 
+type BasicRef = { id: string; name: string }
+type ProductData = {
+  id: string;
+  phoneModelId: string;
+  typeId: string;
+  supplierId: string | null;
+  color: string;
+  stock: number;
+  minStock: number;
+  priceRetail: number;
+  priceWholesale: number;
+  costPrice: number;
+}
+
 export default function EditProductClient({ product, productTypes, suppliers, phoneModels, onSuccess }: {
-  product: any;
-  productTypes: { id: string; name: string }[];
-  suppliers: { id: string; name: string }[];
-  phoneModels: { id: string; name: string }[];
+  product: ProductData;
+  productTypes: BasicRef[];
+  suppliers: BasicRef[];
+  phoneModels: BasicRef[];
   onSuccess?: () => void;
 }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   
-
-  async function handleProductSubmit(data: any) {
+  async function handleProductSubmit(data: FormData) {
     setLoading(true);
     try {
       const res = await fetch(`/api/products/${product.id}`, {

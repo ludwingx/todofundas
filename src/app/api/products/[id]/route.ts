@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import fs from 'fs'
+import path from 'path'
+
+export const runtime = 'nodejs'
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params
     const formData = await req.formData()
-    const data: Record<string, any> = {}
+    const data: Record<string, unknown> = {}
     for (const [key, value] of formData.entries()) {
       data[key] = value
     }
@@ -14,9 +18,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     let imageUrl: string | undefined
     const imageFile = formData.get('image')
     if (imageFile && typeof imageFile === 'object' && 'arrayBuffer' in imageFile) {
-      const buffer = Buffer.from(await (imageFile as any).arrayBuffer())
-      const fs = require('fs')
-      const path = require('path')
+      const file = imageFile as File
+      const buffer = Buffer.from(await file.arrayBuffer())
       const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
       const uploadDir = path.join(process.cwd(), 'public', 'uploads')
       if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
@@ -33,8 +36,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const updated = await prisma.product.update({
       where: { id },
       data: {
-        // nombre puede venir generado desde el formulario
-        name: data.name as string,
         phoneModelId: data.phoneModelId as string,
         typeId: data.typeId as string,
         supplierId: data.supplierId ? (data.supplierId as string) : null,
@@ -61,12 +62,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const { id } = params
     const body = await req.json()
 
-    const data: Record<string, any> = {}
+    const data: Record<string, unknown> = {}
     if (body.status) {
       data.status = String(body.status)
     }
     // Extensible: permitir cambios puntuales sin usar formData
-    if (body.name) data.name = String(body.name)
     if (body.minStock !== undefined) data.minStock = Number(body.minStock)
 
     if (Object.keys(data).length === 0) {
@@ -82,7 +82,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 // DELETE /api/products/[id] - soft delete (status = 'deleted')
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params
     await prisma.product.update({ where: { id }, data: { status: 'deleted' } })

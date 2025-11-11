@@ -5,6 +5,20 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 import { Edit } from "lucide-react";
 import EditProductClient from "./EditProductClient";
 
+type BasicRef = { id: string; name: string }
+type ProductData = {
+  id: string;
+  phoneModelId: string;
+  typeId: string;
+  supplierId: string | null;
+  color: string;
+  stock: number;
+  minStock: number;
+  priceRetail: number;
+  priceWholesale: number;
+  costPrice: number;
+}
+
 export default function ProductEditDialog({
   trigger,
   product,
@@ -12,10 +26,10 @@ export default function ProductEditDialog({
   suppliers,
   phoneModels,
 }: {
-  product: any;
-  productTypes: { id: string; name: string }[];
-  suppliers: { id: string; name: string }[];
-  phoneModels: { id: string; name: string }[];
+  product: ProductData;
+  productTypes: BasicRef[];
+  suppliers: BasicRef[];
+  phoneModels: BasicRef[];
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);

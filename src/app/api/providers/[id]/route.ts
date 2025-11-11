@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { id } = params
   try {
     const body = await req.json()
-    const data: Record<string, any> = {}
+    const data: Record<string, unknown> = {}
     if (body.name !== undefined) data.name = String(body.name)
     if (body.contact !== undefined) data.contact = body.contact ? String(body.contact) : null
     if (body.email !== undefined) data.email = body.email ? String(body.email) : null
