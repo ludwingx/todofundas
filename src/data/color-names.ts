@@ -91,7 +91,7 @@ export const COLOR_NAMES_ES: Record<string, string> = {
   '#FFEFD5': 'Papaya Whip',
   '#FFF5EE': 'Concha de Mar',
   '#F5F5DC': 'Beige',
-  // '#F5DEB3': 'Trigo', // Similar to '#F5F5DC'
+  '#F5DEB3': 'Trigo',
   '#F4A460': 'Marrón Arena',
   '#D2B48C': 'Bronceado',
   '#DAA520': 'Dorado',
@@ -101,7 +101,7 @@ export const COLOR_NAMES_ES: Record<string, string> = {
   '#6B8E23': 'Oliva Apagado',
   '#556B2F': 'Oliva Oscuro',
   '#808000': 'Oliva',
-  '#F0E68C': 'Caqui Claro',
+  '#F0E68C': 'Caqui',
   '#EEE8AA': 'Amarillo Claro',
   '#FAFAD2': 'Amarillo Claro',
   '#FFFFE0': 'Amarillo Claro',
@@ -215,9 +215,10 @@ export const COLOR_NAMES_ES: Record<string, string> = {
 
   // MORADOS Y VIOLETAS
   '#800080': 'Púrpura',
-  '#8A2BE2': 'Azul Violeta',
+  '#8B008B': 'Magenta Oscuro',
   '#9932CC': 'Orquídea Oscura',
   '#9400D3': 'Violeta Oscuro',
+  '#8A2BE2': 'Azul Violeta',
   '#9370DB': 'Púrpura Medio',
   '#4B0082': 'Índigo',
   '#C9A0DC': 'Lila',
@@ -228,10 +229,9 @@ export const COLOR_NAMES_ES: Record<string, string> = {
   '#4B0080': 'Púrpura Real',
   '#330066': 'Violeta Profundo',
   '#2E004F': 'Morado Ébano',
+  '#5D2F8C': 'Púrpura Amatista',
   '#BA55D3': 'Orquídea Media',
   '#DDA0DD': 'Ciruela Claro',
-  '#EE82EE': 'Violeta',
-  '#FF00FF': 'Magenta',
   '#FF33FF': 'Magenta Brillante',
   '#FF66FF': 'Magenta Pastel',
   '#CC00CC': 'Púrpura Eléctrico',
@@ -264,16 +264,16 @@ export const COLOR_NAMES_ES: Record<string, string> = {
   '#DCDCDC': 'Gris Ganancia',
   '#F5F5F5': 'Gris Humo',
   '#E5E5E5': 'Gris Plata',
-  '#F0F0F0': 'Gris Claro',
+  '#F8F8FF': 'Azul Fantasma',
+  '#F0F8FF': 'Azul Alicia',
   '#F0FFF0': 'Miel',
   '#FFF0F5': 'Lavanda Rojo',
-  '#E6E6FA': 'Lavanda',
   '#FAF0E6': 'Lino',
   '#FDF5E6': 'Blanco Antiguo',
   '#FAEBD7': 'Blanco Antiguo',
-  '#FFFAF0': 'Blanco Hueso',
   '#FFF8DC': 'Blanco Maíz',
   '#F0F0F0': 'Gris Claro',
+  '#E0E0E0': 'Gris Plata',
   '#36454F': 'Gris Carbón',
   '#121212': 'Negro Carbón',
   '#1A1A1A': 'Gris Ébano',
@@ -299,21 +299,11 @@ export const COLOR_NAMES_ES: Record<string, string> = {
   '#CCFF00': 'Amarillo Neón',
   '#BF00FF': 'Púrpura Neón',
   '#00F5FF': 'Cian Neón',
-
-  // COLORES PASTEL
-  '#FFB6C1': 'Rosa Pastel',
-  '#87CEEB': 'Azul Pastel',
-  '#98FB98': 'Verde Pastel',
-  '#DDA0DD': 'Púrpura Pastel',
-  '#FFA07A': 'Naranja Pastel',
-  '#F0E68C': 'Amarillo Pastel Claro',
-  '#E6E6FA': 'Lavanda Pastel',
-  '#FFEFD5': 'Melocotón Pastel',
-  '#F5F5DC': 'Beige Pastel',
 };
 
 // Total: ~300+ colores únicos organizados por familia
 // Se han eliminado todos los duplicados para resolver el error TypeScript
+
 export function hexToRgb(hex: string): {r: number, g: number, b: number} | null {
   hex = hex.replace(/^#/, '')
   
@@ -339,30 +329,12 @@ export function colorDistance(rgb1: {r: number, g: number, b: number}, rgb2: {r:
   )
 }
 
-// Type for the color-namer module
-type ColorNamer = {
-  <T extends string = string>(color: string, options?: { pick?: T[]; omit?: T[] }): Record<string, Array<{ name: string }>>;
-  default?: ColorNamer;
-}
-
-type ColorNamerModule = {
-  (color: string, options?: { pick?: string[]; omit?: string[] }): Record<string, Array<{ name: string }>>;
-  default?: ColorNamerModule;
-}
-
 // Importar color-namer dinámicamente para evitar problemas de SSR
-const getNamer = async (): Promise<ColorNamer | null> => {
+const getNamer = async () => {
   if (typeof window === 'undefined') return null;
-  try {
-    const namerModule = await import('color-namer');
-    // Handle both ESM and CJS module formats
-    const namer = 'default' in namerModule ? namerModule.default : namerModule;
-    // Ensure the namer is callable
-    return typeof namer === 'function' ? namer : null;
-  } catch (error) {
-    console.error('Error loading color-namer:', error);
-    return null;
-  }
+  const namerModule = await import('color-namer');
+  // Acceder a la función correctamente - puede ser namerModule.default o namerModule directamente
+  return namerModule.default || namerModule;
 };
 
 export async function getColorName(hex: string): Promise<string> {
@@ -414,50 +386,26 @@ async function getColorFromNamer(hex: string): Promise<string> {
     const rgb = hexToRgb(hex);
     if (!rgb) return 'Color personalizado';
     
-    const namer = await getNamer();
-    if (!namer) return 'Color personalizado';
+    const namerModule = await getNamer();
+    if (!namerModule) return 'Color personalizado';
     
-    // Call the namer function with the hex value
-    const names = namer(hex);
+    // Llamar correctamente a la función namer
+    const names = namerModule(hex);
+    const tone = getColorTone(rgb);
     
     const getBestName = (): string => {
-      // Find the first available color name from any palette
-      const getFirstAvailableName = (): string | undefined => {
-        // Try Spanish names first
-        const colorNames = names as Record<string, Array<{ name: string }>>;
-        
-        // Try to get Spanish name first
-        if (colorNames.es?.[0]?.name) {
-          return colorNames.es[0].name;
-        }
-        
-        // Fall back to basic names
-        if (colorNames.basic?.[0]?.name) {
-          const baseName = colorNames.basic[0].name;
-          
-          const max = Math.max(rgb.r, rgb.g, rgb.b);
-          const min = Math.min(rgb.r, rgb.g, rgb.b);
-          const saturation = (max - min) / max || 0;
-          
-          if (saturation < 0.2) {
-            return (getColorTone(rgb) === 'dark' ? 'Grisáceo ' : 'Apagado ') + baseName;
-          }
-          
-          return baseName;
-        }
-        
-        // Then try any other palette
-        for (const palette in names) {
-          if (names[palette]?.[0]?.name) {
-            return names[palette][0].name;
-          }
-        }
-        
-        return undefined;
-      };
+      if (names.es?.[0]?.name) {
+        return names.es[0].name;
+      }
       
-      const baseName = getFirstAvailableName();
-      if (baseName) {
+      if (names.basic?.length > 0) {
+        const baseName = names.basic[0].name;
+        const tonePrefix = tone === 'dark' ? 'Oscuro ' : 'Claro ';
+        
+        if ((tone === 'dark' && rgb.r + rgb.g + rgb.b < 100) || 
+            (tone === 'light' && rgb.r + rgb.g + rgb.b > 700)) {
+          return tonePrefix + baseName;
+        }
         
         const max = Math.max(rgb.r, rgb.g, rgb.b);
         const min = Math.min(rgb.r, rgb.g, rgb.b);
