@@ -19,7 +19,7 @@ export default async function DeletedPhoneModelsPage() {
           </p>
         </div>
         <Button asChild variant="outline">
-          <Link href="/inventory/phone-models">
+          <Link href="/phone-models" className="flex items-center">
             <Undo className="mr-2 h-4 w-4" />
             Volver a Modelos
           </Link>

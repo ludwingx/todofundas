@@ -38,7 +38,7 @@ const data = {
   company: {
     name: "FundaMania",
     logo: Smartphone,
-    plan: "Sistema de Gestión",
+    plan: "i-ERP",
   },
   navMain: [
     {
@@ -73,11 +73,11 @@ const data = {
         },
         {
           title: "Modelos",
-          url: "/phone-models"
+          url: "/inventory/phone-models"
         },
         {
           title: "Colores",
-          url: "/dashboard/colors"
+          url: "/inventory/colors"
         },
         {
           title: "Proveedores",

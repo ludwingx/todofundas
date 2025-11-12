@@ -47,21 +47,60 @@ export async function GET(request: Request) {
 
 // POST /api/phone-models: crea un modelo nuevo
 export async function POST(req: NextRequest) {
+  console.log('Solicitud POST recibida en /api/phone-models');
   try {
-    const { name } = await req.json();
-    if (!name || typeof name !== 'string' || name.length < 2) {
-      return NextResponse.json({ error: 'Nombre inválido' }, { status: 400 });
+    const body = await req.json();
+    console.log('Cuerpo de la solicitud:', body);
+    
+    const { name } = body;
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      console.error('Nombre inválido:', name);
+      return NextResponse.json(
+        { error: 'El nombre debe tener al menos 2 caracteres' }, 
+        { status: 400 }
+      );
     }
+    
     // Evitar duplicados (case-insensitive)
+    console.log('Buscando modelo existente con nombre:', name);
     const existing = await prisma.phoneModel.findFirst({
-      where: { name: { equals: name, mode: 'insensitive' } },
+      where: { 
+        name: { 
+          equals: name.trim(), 
+          mode: 'insensitive' 
+        } 
+      },
     });
+    
     if (existing) {
-      return NextResponse.json(existing, { status: 200 });
+      console.log('Modelo ya existe:', existing);
+      return NextResponse.json(
+        { 
+          error: 'Ya existe un modelo con ese nombre',
+          existing
+        }, 
+        { status: 409 }
+      );
     }
-    const created = await prisma.phoneModel.create({ data: { name } });
+    
+    console.log('Creando nuevo modelo con nombre:', name);
+    const created = await prisma.phoneModel.create({ 
+      data: { 
+        name: name.trim() 
+      } 
+    });
+    
+    console.log('Modelo creado exitosamente:', created);
     return NextResponse.json(created, { status: 201 });
+    
   } catch (error) {
-    return NextResponse.json({ error: 'Error al crear modelo' }, { status: 500 });
+    console.error('Error en POST /api/phone-models:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error al crear modelo',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      }, 
+      { status: 500 }
+    );
   }
 }

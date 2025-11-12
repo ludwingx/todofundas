@@ -4,11 +4,12 @@ import { prisma } from '@/lib/prisma'
 // GET - Obtener un color por ID
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const { id } = context.params;
   try {
     const color = await prisma.color.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!color) {
@@ -31,8 +32,9 @@ export async function GET(
 // PUT - Actualizar un color
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const { id } = context.params;
   try {
     const body = await request.json()
     const { name, hexCode } = body
@@ -55,7 +57,7 @@ export async function PUT(
 
     // Verificar si el color existe
     const existingColor = await prisma.color.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!existingColor) {
@@ -69,7 +71,7 @@ export async function PUT(
     const duplicateColor = await prisma.color.findFirst({
       where: {
         AND: [
-          { id: { not: params.id } },
+          { id: { not: id } },
           {
             OR: [
               { name: name },
@@ -88,7 +90,7 @@ export async function PUT(
     }
 
     const color = await prisma.color.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name,
         hexCode: hexCode.toUpperCase()
@@ -108,11 +110,12 @@ export async function PUT(
 // DELETE - Eliminar un color (soft delete)
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const { id } = context.params;
   try {
     const color = await prisma.color.findUnique({
-      where: { id: params.id }
+      where: { id }
     })
 
     if (!color) {
@@ -124,7 +127,7 @@ export async function DELETE(
 
     // Soft delete
     await prisma.color.update({
-      where: { id: params.id },
+      where: { id },
       data: { status: 'deleted' }
     })
 
