@@ -1,6 +1,7 @@
 // Utilidades para consumir la API REST de modelos de celular
-export async function fetchPhoneModels(): Promise<{ id: string, name: string }[]> {
-  const res = await fetch('/api/phone-models', { cache: 'no-store' });
+export async function fetchPhoneModels(includeInactive: boolean = false): Promise<{ id: string, name: string }[]> {
+  const url = includeInactive ? '/api/phone-models?status=all' : '/api/phone-models';
+  const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) return [];
   return res.json();
 }

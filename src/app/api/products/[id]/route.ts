@@ -7,49 +7,92 @@ export const runtime = 'nodejs'
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params
-    const formData = await req.formData()
-    const data: Record<string, unknown> = {}
+    const { id } = params;
+    console.log(`Iniciando actualización del producto ${id}`);
+    
+    const formData = await req.formData();
+    const data: Record<string, unknown> = {};
+    
+    // Convertir FormData a objeto para facilitar el manejo
     for (const [key, value] of formData.entries()) {
-      data[key] = value
+      data[key] = value;
     }
+    
+    console.log('Datos recibidos en el servidor:', JSON.stringify(data, null, 2));
+
+    // Validación de campos requeridos
+    const requiredFields = ['phoneModelId', 'typeId', 'priceRetail'];
+    const missingFields = requiredFields.filter(field => !data[field] && data[field] !== 0);
+    
+    if (missingFields.length > 0) {
+      console.error('Faltan campos obligatorios:', missingFields);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Faltan campos obligatorios',
+          missingFields,
+          receivedData: data 
+        }, 
+        { status: 400 }
+      );
+    }
+    
+    // El color es opcional, si no viene o es cadena vacía, se guarda como null
+    const colorValue = data.color === '' ? null : String(data.color);
 
     // Procesar imagen si viene
-    let imageUrl: string | undefined
-    const imageFile = formData.get('image')
+    let imageUrl: string | undefined;
+    const imageFile = formData.get('image');
+    
     if (imageFile && typeof imageFile === 'object' && 'arrayBuffer' in imageFile) {
-      const file = imageFile as File
-      const buffer = Buffer.from(await file.arrayBuffer())
-      const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
-      const filePath = path.join(uploadDir, filename)
-      fs.writeFileSync(filePath, buffer)
-      imageUrl = `/uploads/${filename}`
+      try {
+        const file = imageFile as File;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const filename = `product_${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+        
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        
+        const filePath = path.join(uploadDir, filename);
+        fs.writeFileSync(filePath, buffer);
+        imageUrl = `/uploads/${filename}`;
+        console.log('Imagen guardada en:', imageUrl);
+      } catch (error) {
+        console.error('Error al procesar la imagen:', error);
+        // No detenemos el flujo por un error en la imagen
+      }
     }
 
-    // Validación básica
-    if (!data.phoneModelId || !data.typeId || !data.color || data.stock === undefined || data.priceRetail === undefined) {
-      return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 })
+    // Preparar datos para la actualización
+    const updateData: any = {
+      phoneModelId: String(data.phoneModelId),
+      typeId: String(data.typeId),
+      supplierId: data.supplierId ? String(data.supplierId) : null,
+      color: colorValue,
+      stock: Number(data.stock) || 0,
+      minStock: data.minStock !== undefined ? Number(data.minStock) : 0,
+      priceRetail: Number(data.priceRetail) || 0,
+      priceWholesale: data.priceWholesale ? Number(data.priceWholesale) : 0,
+      costPrice: data.costPrice ? Number(data.costPrice) : 0,
+    };
+
+    // Agregar la URL de la imagen si se subió una nueva
+    if (imageUrl) {
+      updateData.imageUrl = imageUrl;
     }
 
+    console.log('Datos para actualizar:', JSON.stringify(updateData, null, 2));
+
+    // Actualizar el producto
     const updated = await prisma.product.update({
       where: { id },
-      data: {
-        phoneModelId: data.phoneModelId as string,
-        typeId: data.typeId as string,
-        supplierId: data.supplierId ? (data.supplierId as string) : null,
-        color: data.color as string,
-        stock: Number(data.stock),
-        minStock: data.minStock !== undefined ? Number(data.minStock) : undefined,
-        priceRetail: Number(data.priceRetail),
-        priceWholesale: Number(data.priceWholesale),
-        costPrice: Number(data.costPrice),
-        ...(imageUrl ? { imageUrl } : {}),
-      },
-    })
+      data: updateData,
+    });
 
-    return NextResponse.json({ success: true, productId: updated.id })
+    console.log('Producto actualizado correctamente:', updated.id);
+    return NextResponse.json({ success: true, productId: updated.id });
   } catch (error) {
     console.error('Error updating product:', error)
     return NextResponse.json({ error: 'Error en el servidor' }, { status: 500 })

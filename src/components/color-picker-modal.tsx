@@ -30,6 +30,7 @@ export function ColorPickerModal({
 }: ColorPickerModalProps) {
   const [name, setName] = useState("")
   const [hexCode, setHexCode] = useState("#000000")
+  const [displayHex, setDisplayHex] = useState("#000000")
   const [isNaming, setIsNaming] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -38,25 +39,29 @@ export function ColorPickerModal({
     if (editColor) {
       setName(editColor.name)
       setHexCode(editColor.hexCode)
+      setDisplayHex(editColor.hexCode)
     } else {
       setName("")
       setHexCode("#000000")
+      setDisplayHex("#000000")
     }
     setError("")
   }, [editColor, open])
 
   const handleHexChange = async (value: string) => {
-    if (!value.startsWith("#")) {
+    if (!value.startsWith("#") && value !== '') {
       value = "#" + value
     }
     value = value.slice(0, 7)
-    setHexCode(value.toUpperCase())
+    const upperValue = value.toUpperCase()
+    setHexCode(upperValue)
+    setDisplayHex(upperValue)
     
     // Si el campo de nombre está vacío o es un nombre generado previamente
     if (!name || name === 'Cargando...' || name === 'Color personalizado' || 
         (name && name.length < 3) || 
         (name && name.toLowerCase() === name)) {
-      await suggestColorName(value.toUpperCase())
+      await suggestColorName(upperValue)
     }
   }
 
@@ -85,27 +90,29 @@ export function ColorPickerModal({
   }
 
   const handleSave = async () => {
-    setError("")
-
     if (!name.trim()) {
-      setError("El nombre del color es requerido")
+      setError("Por favor ingresa un nombre para el color")
       return
     }
-
-    if (!validateHex(hexCode)) {
-      setError("Código hexadecimal inválido. Debe ser formato #RRGGBB")
+    
+    // Validate hex code
+    if (!hexCode || !hexCode.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)) {
+      setError("Por favor ingresa un código de color hexadecimal válido")
       return
     }
-
-    setIsLoading(true)
-    try {
-      await onSave({ name: name.trim(), hexCode })
-      onOpenChange(false)
-    } catch (err) {
-      setError("Error al guardar el color")
-    } finally {
-      setIsLoading(false)
-    }
+    
+    // Save the color
+    onSave({
+      name,
+      hexCode: hexCode.toLowerCase()
+    })
+    
+    // Reset form
+    setName("")
+    setHexCode("#000000")
+    setDisplayHex("#000000")
+    setError("")
+    onOpenChange(false)
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -182,29 +189,35 @@ export function ColorPickerModal({
                     />
                     <div 
                       className="w-32 h-32 rounded-lg border-4 border-white shadow-lg cursor-pointer transition-all hover:scale-105 hover:shadow-xl"
-                      style={{ backgroundColor: hexCode }}
+                      style={{ 
+                        backgroundColor: hexCode
+                      }}
                     />
                   </div>
                 </div>
               </div>
 
               {/* Input hexadecimal */}
-              <div className="space-y-2 ">
-                <Label htmlFor="hexInput" className="text-sm font-medium justify-center flex">
-                  Código Hexadecimal:
-                </Label>
-                <Input
-                  id="hexInput"
-                  value={hexCode}
-                  onChange={(e) => handleHexChange(e.target.value)}
-                  className="font-mono text-center h-10"
-                  maxLength={7}
-                  onKeyPress={handleKeyPress}
-                  placeholder="#000000"
-                />
-                <p className="text-xs text-muted-foreground text-center">
-                  Formato: #RRGGBB (ej: #FF5733)
-                </p>
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="hex">Código HEX</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="hex"
+                    value={displayHex}
+                    onChange={(e) => handleHexChange(e.target.value)}
+                    placeholder="#RRGGBB"
+                    className="font-mono"
+                  />
+                  <div 
+                    className="w-8 h-8 rounded-md border"
+                    style={{ 
+                      backgroundColor: hexCode
+                    }}
+                    title={hexCode}
+                  />
+                </div>
               </div>
             </div>
           </div>

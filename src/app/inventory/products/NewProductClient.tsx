@@ -1,14 +1,41 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProductForm } from '@/components/product-form';
+import { getColors } from "@/lib/api/colors";
 
-export default function NewProductClient({ productTypes, suppliers, phoneModels, onSuccess }: {
+export default function NewProductClient({ productTypes, suppliers, phoneModels: initialPhoneModels, onSuccess }: {
   productTypes: { id: string; name: string }[];
   suppliers: { id: string; name: string }[];
   phoneModels: { id: string; name: string }[];
   onSuccess?: () => void;
 }) {
+  const [phoneModels, setPhoneModels] = useState(initialPhoneModels);
+  
+  useEffect(() => {
+    async function loadActivePhoneModels() {
+      try {
+        const response = await fetch('/api/phone-models?status=active');
+        if (response.ok) {
+          const data = await response.json();
+          setPhoneModels(data);
+        }
+      } catch (error) {
+        console.error('Error loading active phone models:', error);
+      }
+    }
+    
+    loadActivePhoneModels();
+  }, []);
   const [loading, setLoading] = useState(false);
+  const [colors, setColors] = useState<{ id: string; name: string; hexCode: string }[]>([]);
+
+  useEffect(() => {
+    async function loadColors() {
+      const colorsData = await getColors();
+      setColors(colorsData);
+    }
+    loadColors();
+  }, []);
 
   async function handleProductSubmit(data: FormData) {
     setLoading(true);
@@ -36,6 +63,7 @@ export default function NewProductClient({ productTypes, suppliers, phoneModels,
       productTypes={productTypes}
       suppliers={suppliers}
       phoneModels={phoneModels}
+      colors={colors}
       onSubmit={handleProductSubmit}
       loading={loading}
     />

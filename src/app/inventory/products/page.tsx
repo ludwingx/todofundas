@@ -78,12 +78,28 @@ export default async function ProductsPage() {
     displayName: `${product.type?.name || 'Sin Tipo'} ${product.phoneModel?.name || 'Sin Modelo'}`.trim()
   }));
 
-  // Obtener tipos, proveedores y modelos
-  const productTypes = await prisma.productType.findMany({ select: { id: true, name: true } });
-  const suppliers = await prisma.supplier.findMany({ select: { id: true, name: true } });
-  const phoneModels = await prisma.phoneModel.findMany({ select: { id: true, name: true } });
+  // Obtener tipos, proveedores, modelos y colores
+  const [productTypes, suppliers, phoneModels, colors] = await Promise.all([
+    prisma.productType.findMany({ select: { id: true, name: true } }),
+    prisma.supplier.findMany({ select: { id: true, name: true } }),
+    prisma.phoneModel.findMany({ select: { id: true, name: true } }),
+    prisma.color.findMany({ 
+      where: { status: 'active' },
+      select: { id: true, name: true, hexCode: true } 
+    })
+  ]);
 
-  console.log(products);
+  // Función para obtener el nombre del color
+  const getColorDisplayName = (hex: string | null | undefined): string => {
+    if (!hex) return 'Sin color';
+    
+    // Buscar en los colores de la base de datos
+    const dbColor = colors.find(c => c.hexCode.toLowerCase() === hex.toLowerCase());
+    if (dbColor) return dbColor.name;
+    
+    // Si no se encuentra, usar la función getColorName original
+    return getColorName(hex);
+  };
 
   return (
     <SidebarProvider>
@@ -176,7 +192,6 @@ export default async function ProductsPage() {
                 <TableRow>
                   <TableHead className="w-[64px] hidden sm:table-cell">Imagen</TableHead>
                   <TableHead>Producto</TableHead>
-                  <TableHead>Tipo</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Precio</TableHead>
@@ -213,27 +228,31 @@ export default async function ProductsPage() {
                           <span
                             className="inline-block w-5 h-5 rounded-full border border-muted shadow"
                             style={{ backgroundColor: product.color }}
-                            title={getColorName(product.color)}
+                            title={getColorDisplayName(product.color)}
                           />
                           <span className="text-xs text-muted-foreground">
-                            {getColorName(product.color)}
+                            {getColorDisplayName(product.color)}
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>{!product.type ? 'Sin Tipo' : product.type.name || 'Sin Tipo'}</TableCell>
                       <TableCell>
                         <span className={`font-semibold ${
                           product.stock === 0 ? 'text-red-600' : 
-                          product.stock <= 5 ? 'text-orange-600' : 
+                          (product.minStock !== null && product.stock <= product.minStock) ? 'text-orange-600' : 
                           'text-green-600'
                         }`}>
                           {product.stock}
+                          {product.minStock !== null && (
+                            <span className="text-xs text-muted-foreground block">
+                              Mín: {product.minStock}
+                            </span>
+                          )}
                         </span>
                       </TableCell>
                       <TableCell>
                         {product.stock === 0 ? (
                           <Badge variant="destructive">Sin Stock</Badge>
-                        ) : product.stock <= 5 ? (
+                        ) : (product.minStock !== null && product.stock <= product.minStock) ? (
                           <Badge variant="secondary" className="bg-orange-100 text-orange-800">
                             Bajo Stock
                           </Badge>

@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { ColorSelector } from "@/components/ui/color-selector";
 
 export type ProductFormProps = {
   product?: {
@@ -20,18 +19,20 @@ export type ProductFormProps = {
   productTypes: { id: string; name: string }[];
   suppliers: { id: string; name: string }[];
   phoneModels: { id: string; name: string }[];
+  colors: { id: string; name: string; hexCode: string }[];
   onSubmit: (data: FormData) => void | Promise<void>;
   loading?: boolean;
 };
 
-export function ProductForm({ product, productTypes, suppliers, phoneModels, onSubmit, loading }: ProductFormProps) {
+export function ProductForm({ product, productTypes, suppliers, phoneModels, colors, onSubmit, loading }: ProductFormProps) {
   const [form, setForm] = useState(() => ({
     phoneModelId: product?.phoneModelId || "",
     typeId: product?.typeId || "",
     // Use a sentinel value for "Sin proveedor" because SelectItem cannot have empty string
     supplierId: (product?.supplierId ?? "__none__"),
-    color: product?.color || "",
-    // Convert stock to number and ensure it's a valid number
+    // Asegurar que siempre haya un color seleccionado
+    color: product?.color || (colors.length > 0 ? colors[0].hexCode : "#000000"),
+    // Stock is managed automatically and not shown in the form
     stock: product?.stock ? Number(product.stock) : 0,
     minStock: product?.minStock ? Number(product.minStock) : 5,
     priceRetail: product?.priceRetail ? String(product.priceRetail) : "",
@@ -66,13 +67,22 @@ export function ProductForm({ product, productTypes, suppliers, phoneModels, onS
     // Use FormData to send image + data
     const formData = new FormData();
     
-    // Add all form fields except name (removed from schema)
+    // Add all form fields with proper type conversion
     Object.entries(form).forEach(([key, value]) => {
       if (key === 'supplierId') {
         // If sentinel selected, omit supplierId so backend stores null
         if (value === '__none__') return;
+        if (value) formData.append(key, value as string);
+        return;
       }
-      formData.append(key, value as string);
+      
+      // Convertir valores numéricos
+      if (['stock', 'minStock', 'priceRetail', 'priceWholesale', 'costPrice'].includes(key)) {
+        const numValue = Number(value) || 0;
+        formData.append(key, numValue.toString());
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, value as string);
+      }
     });
     
     // Add image if provided
@@ -144,28 +154,35 @@ export function ProductForm({ product, productTypes, suppliers, phoneModels, onS
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Color</label>
-              <ColorSelector
-                name="color"
+              <Select 
                 value={form.color}
-                onChange={(value) => setForm((prev) => ({ ...prev, color: value }))}
-                required
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <label className="block text-sm font-medium mb-1">Stock</label>
-                <span className="text-xs text-muted-foreground" title="El stock se actualiza automáticamente con compras y ventas">
-                  (solo lectura)
-                </span>
-              </div>
-              <Input 
-                name="stock" 
-                type="number" 
-                value={form.stock} 
-                readOnly 
-                className="bg-muted/50 cursor-not-allowed"
-                aria-readonly="true"
-              />
+                onValueChange={(value) => {
+                  setForm((prev) => ({ ...prev, color: value }));
+                }}
+              >
+                <SelectTrigger disabled={loading || submitting} className="text-left">
+                  <div className="flex items-center gap-2 w-full">
+                    <div 
+                      className="w-4 h-4 rounded-full border flex-shrink-0" 
+                      style={{ backgroundColor: form.color }}
+                    />
+                    <span>{colors.find(c => c.hexCode === form.color)?.name || 'Color'}</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {colors.map((color) => (
+                    <SelectItem key={color.id} value={color.hexCode}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-4 h-4 rounded-full border flex-shrink-0" 
+                          style={{ backgroundColor: color.hexCode }}
+                        />
+                        <span>{color.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Stock mínimo</label>
