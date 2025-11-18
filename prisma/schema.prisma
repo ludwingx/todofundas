@@ -48,6 +48,7 @@ model ProductType {
   id       String    @id @default(uuid())
   name     String    @unique // "Funda", "Vidrio", etc.
   products Product[]
+  status  String    @default("active") // "active" o "deleted"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

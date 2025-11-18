@@ -17,11 +17,15 @@ import { CreateModelDialog } from "./CreateModelDialog";
 
 type PhoneModel = { id: string; name: string; status: string };
 
-export default function PhoneModelsClient() {
+interface PhoneModelsClientProps {
+  showDeleted: boolean;
+  onModelCreated: () => void;
+}
+
+export default function PhoneModelsClient({ showDeleted, onModelCreated }: PhoneModelsClientProps) {
   const [models, setModels] = useState<PhoneModel[]>([]);
   const [deletedCount, setDeletedCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [showDeleted, setShowDeleted] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -195,6 +199,7 @@ export default function PhoneModelsClient() {
   }
 
   async function handleModelCreated(): Promise<void> {
+    if (onModelCreated) onModelCreated();
     try {
       // Recargar la lista de modelos
       await load();
@@ -216,59 +221,33 @@ export default function PhoneModelsClient() {
 
   return (
     <div className="space-y-6">
-      {/* Search and Actions */}
-      <Card className="overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h2 className="text-lg font-semibold">Modelos de Teléfono</h2>
-              <p className="text-sm text-muted-foreground">
-                {showDeleted 
-                  ? 'Viendo modelos eliminados' 
-                  : `Mostrando ${filtered.length} de ${models.length} modelos`}
-              </p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar modelos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-full"
-                />
-              </div>
-              
-              <div className="flex gap-2">
-                <CreateModelDialog onSuccess={handleModelCreated} />
-                <Button 
-                  variant={showDeleted ? "default" : "outline"} 
-                  onClick={() => setShowDeleted(!showDeleted)}
-                  className="shrink-0"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {showDeleted ? 'Ver Activos' : `Papelera (${deletedCount})`}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Table Card */}
+       {/* Table Card */}
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="space-y-1">
-              <CardTitle>Lista de Modelos</CardTitle>
-              <CardDescription>
-                {filtered.length} {filtered.length === 1 ? 'modelo' : 'modelos'} encontrados
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
+  <div className="space-y-1">
+    <CardTitle>Lista de Modelos</CardTitle>
+    <CardDescription>
+      {filtered.length} {filtered.length === 1 ? 'modelo' : 'modelos'} encontrados
+    </CardDescription>
+  </div>
+</CardHeader>
+{/* Buscador dentro de la Card, arriba de la tabla */}
+<div className="px-6 pt-4">
+  <div className="flex w-full">
+    <div className="flex-1 w-full sm:w-auto">
+      <div className="relative max-w-xs">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Buscar modelos..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-9 w-full"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+<CardContent className="p-0">
           <div className="rounded-lg border">
             <Table>
               <TableHeader>
@@ -376,10 +355,8 @@ export default function PhoneModelsClient() {
         </CardContent>
       </Card>
 
-      {/* Pagination Controls */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>
+         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-sm text-muted-foreground">
               {filtered.length > 0 ? (
                 (() => {
@@ -430,8 +407,7 @@ export default function PhoneModelsClient() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }

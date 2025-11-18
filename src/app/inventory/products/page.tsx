@@ -145,14 +145,14 @@ export default async function ProductsPage() {
             </div>
             <div className="flex items-center gap-2">
               <Link href="/inventory/products/deleted">
-                <Button variant="outline" className="flex items-center gap-2">
+                <Button className="flex items-center gap-2">
                   <Trash2 className="h-4 w-4" />
                   <span className="hidden sm:inline">Eliminados</span>
                 </Button>
               </Link>
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
+                  <Button className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     <span className="hidden sm:inline">Registrar Producto</span>
                   </Button>
@@ -179,7 +179,7 @@ export default async function ProductsPage() {
                 className="pl-8"
               />
             </div>
-            <Button variant="outline">
+            <Button>
               <Filter className="mr-2 h-4 w-4" />
               Filtros
             </Button>
@@ -253,11 +253,17 @@ export default async function ProductsPage() {
                         {product.stock === 0 ? (
                           <Badge variant="destructive">Sin Stock</Badge>
                         ) : (product.minStock !== null && product.stock <= product.minStock) ? (
-                          <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                          <Badge
+                            variant="secondary"
+                            className="bg-red-300 text-red-800 dark:bg-red-900 dark:text-red-100"
+                          >
                             Bajo Stock
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          <Badge
+                            variant="secondary"
+                            className="bg-green-300 text-green-800 dark:bg-green-900 dark:text-green-100"
+                          >
                             En Stock
                           </Badge>
                         )}

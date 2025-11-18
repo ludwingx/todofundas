@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
 import { DeleteModal } from "@/components/ui/delete-modal"
-import { Package, Image as ImageIcon, RotateCcw, Trash2, Search, Filter } from "lucide-react"
+import { Package, Image as ImageIcon, RotateCcw,  Search, Filter } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -121,7 +121,7 @@ export default async function DeletedProductsPage() {
                     <TableCell className="hidden sm:table-cell">
                       <div className="relative flex h-10 w-10 items-center justify-center rounded-md bg-muted">
                         {product.imageUrl ? (
-                          <Image src={product.imageUrl} alt={product.name} fill className="rounded-md object-cover" />
+                          <Image src={product.imageUrl} alt={product.} fill className="rounded-md object-cover" />
                         ) : (
                           <ImageIcon className="h-5 w-5 text-muted-foreground" />
                         )}

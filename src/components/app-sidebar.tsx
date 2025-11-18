@@ -27,6 +27,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import { title } from "process"
 
 // Navigation data for Fundamania system
 const data = {
@@ -80,15 +81,37 @@ const data = {
           url: "/inventory/colors"
         },
         {
-          title: "Proveedores",
-          url: "/inventory/providers"
-        }
+          title: "Tipos de Producto",
+          url: "/inventory/types"
+        },
+        {
+          title: "Movimientos",
+          url: "/inventory/movements"
+        },
       ]
     },
     {
       title: "Compras",
       icon: ShoppingBag,
-      url: "/purchases"
+      url: "/purchases",
+      items:[
+        {
+          title: "Nueva Compra",
+          url: "/purchases/new"
+        },
+        {
+          title: "Historial de Compras",
+          url: "/purchases"
+        },
+        {
+          title: "Proveedores",
+          url: "/purchases/providers"
+        },
+        {
+          title: "Facturas",
+          url: "/purchases/invoices"
+        },
+      ]
     },
     {
       title: "Reportes",

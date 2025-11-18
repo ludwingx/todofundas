@@ -1,5 +1,4 @@
-import PhoneModelsClient from "./PhoneModelsClient"
-import { PhoneModelsActions } from "./PhoneModelsActions"
+import { Suspense } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -11,14 +10,15 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarTrigger, SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import PhoneModelsPageClient from "./PhoneModelsPageClient";
+import React from "react"; 
+import InventoryMovementsPageClient from "./InventoryMovementsPageClient";
 
-export default async function PhoneModelsPage() {
-  const { getSession } = await import('@/app/actions/auth');
+export default async function InventoryMovementsPage() {
+  const { getSession } = await import("@/app/actions/auth");
   const session = await getSession();
   if (!session) {
-    const { redirect } = await import('next/navigation');
-    redirect('/login');
+    const { redirect } = await import("next/navigation");
+    redirect("/login");
   }
   const userData = {
     name: session.name as string,
@@ -40,7 +40,7 @@ export default async function PhoneModelsPage() {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Modelos Teléfono</BreadcrumbPage>
+                  <BreadcrumbPage>Movimientos de Inventario</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -48,13 +48,17 @@ export default async function PhoneModelsPage() {
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Modelos de Teléfono</h1>
-            <p className="text-muted-foreground">Administra la lista de modelos disponibles</p>
+            <h1 className="text-3xl font-bold tracking-tight">Movimientos de Inventario</h1>
+            <p className="text-muted-foreground">Gestiona los movimientos de entrada, salida y ajuste de inventario</p>
           </div>
-          <PhoneModelsPageClient userData={userData} />
+          <Suspense>
+            <InventoryMovementsPageClient />
+          </Suspense>
         </div>
       </SidebarInset>
     </SidebarProvider>
   );
 }
+
+
 
