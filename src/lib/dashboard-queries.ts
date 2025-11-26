@@ -121,6 +121,7 @@ export async function getRecentActivity() {
           select: {
             id: true,
             phoneModel: { select: { name: true } },
+            type: { select: { name: true } },
             color: true
           }
         },
@@ -151,6 +152,7 @@ export async function getRecentActivity() {
           select: {
             id: true,
             phoneModel: { select: { name: true } },
+            type: { select: { name: true } },
             color: true
           }
         }
@@ -164,8 +166,8 @@ export async function getRecentActivity() {
         type: movement.type === 'entrada' ? 'entrada' : 'movimiento',
         date: movement.createdAt.toISOString(),
         title: movement.type === 'entrada' ? 'Entrada de inventario' : 'Movimiento de inventario',
-        description: `${movement.type === 'entrada' ? 'Ingresaron' : 'Se movieron'} ${movement.quantity} unidades de ${movement.product?.phoneModel?.name || 'producto'} ${movement.product?.color ? `(${movement.product.color})` : ''}`,
-        productName: movement.product?.phoneModel?.name || 'Producto desconocido',
+        description: `${movement.type === 'entrada' ? 'Ingresaron' : 'Se movieron'} ${movement.quantity} unidades de ${movement.product?.type?.name || ''} ${movement.product?.phoneModel?.name || 'producto'} ${movement.product?.color ? `(${movement.product.color})` : ''}`,
+        productName: `${movement.product?.type?.name || ''} ${movement.product?.phoneModel?.name || 'Producto desconocido'}`.trim(),
         productColor: movement.product?.color || 'Sin color',
         quantity: movement.quantity,
         movementType: movement.type,
@@ -176,8 +178,8 @@ export async function getRecentActivity() {
         type: 'venta',
         date: sale.createdAt.toISOString(),
         title: 'Venta registrada',
-        description: `Venta de ${sale.quantity} ${sale.quantity === 1 ? 'unidad' : 'unidades'} de ${sale.product?.phoneModel?.name || 'producto'} ${sale.product?.color ? `(${sale.product.color})` : ''} a ${sale.customerName || 'cliente no especificado'}`,
-        productName: sale.product?.phoneModel?.name || 'Producto desconocido',
+        description: `Venta de ${sale.quantity} ${sale.quantity === 1 ? 'unidad' : 'unidades'} de ${sale.product?.type?.name || ''} ${sale.product?.phoneModel?.name || 'producto'} ${sale.product?.color ? `(${sale.product.color})` : ''} a ${sale.customerName || 'cliente no especificado'}`,
+        productName: `${sale.product?.type?.name || ''} ${sale.product?.phoneModel?.name || 'Producto desconocido'}`.trim(),
         productColor: sale.product?.color || 'Sin color',
         quantity: sale.quantity,
         total: sale.totalPrice,
@@ -207,6 +209,7 @@ export async function getTopProducts() {
         select: {
           id: true,
           phoneModel: { select: { name: true } },
+          type: { select: { name: true } },
           color: true,
           stock: true,
           priceRetail: true
@@ -246,6 +249,7 @@ export async function getTopProducts() {
       select: {
         id: true,
         phoneModel: { select: { name: true } },
+        type: { select: { name: true } },
         color: true,
         stock: true,
         priceRetail: true

@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import * as React from "react";
 import {
   BarChart3,
   ShoppingCart,
@@ -14,20 +14,20 @@ import {
   FileText,
   Smartphone,
   Palette,
-} from "lucide-react"
+} from "lucide-react";
 
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
-import { CompanyHeader } from "@/components/company-header"
+import { NavMain } from "@/components/nav-main";
+import { NavProjects } from "@/components/nav-projects";
+import { NavUser } from "@/components/nav-user";
+import { CompanyHeader } from "@/components/company-header";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from "@/components/ui/sidebar"
-import { title } from "process"
+} from "@/components/ui/sidebar";
+import { title } from "process";
 
 // Navigation data for Fundamania system
 const data = {
@@ -39,7 +39,7 @@ const data = {
   company: {
     name: "FundaMania",
     logo: Smartphone,
-    plan: "i-ERP",
+    plan: "By: Ludwing",
   },
   navMain: [
     {
@@ -55,13 +55,32 @@ const data = {
       items: [
         {
           title: "Nueva Venta",
-          url: "/sales/new"
+          url: "/sales/new",
         },
         {
           title: "Historial",
-          url: "/sales"
-        }
-      ]
+          url: "/sales",
+        },
+      ],
+    },
+    {
+      title: "Compras",
+      icon: ShoppingBag,
+      url: "/purchases",
+      items: [
+        {
+          title: "Nueva Compra",
+          url: "/purchases/new",
+        },
+        {
+          title: "Historial",
+          url: "/purchases",
+        },
+        {
+          title: "Facturas",
+          url: "/purchases/invoices",
+        },
+      ],
     },
     {
       title: "Inventario",
@@ -70,58 +89,59 @@ const data = {
       items: [
         {
           title: "Productos",
-          url: "/inventory/products"
-        },
-        {
-          title: "Modelos",
-          url: "/inventory/phone-models"
-        },
-        {
-          title: "Colores",
-          url: "/inventory/colors"
-        },
-        {
-          title: "Tipos de Producto",
-          url: "/inventory/types"
+          url: "/inventory/products",
         },
         {
           title: "Movimientos",
-          url: "/inventory/movements"
+          url: "/inventory/movements",
         },
-      ]
+      ],
     },
     {
-      title: "Compras",
-      icon: ShoppingBag,
-      url: "/purchases",
-      items:[
+      title: "Configuración",
+      icon: Settings,
+      url: "/settings",
+      items: [
         {
-          title: "Nueva Compra",
-          url: "/purchases/new"
+          title: "Modelos de Teléfono",
+          url: "/inventory/phone-models",
         },
         {
-          title: "Historial de Compras",
-          url: "/purchases"
+          title: "Colores",
+          url: "/inventory/colors",
+        },
+        {
+          title: "Tipos de Producto",
+          url: "/inventory/types",
+        },
+        {
+          title: "Materiales",
+          url: "/inventory/materials",
+        },
+        {
+          title: "Compatibilidad",
+          url: "/inventory/compatibility",
         },
         {
           title: "Proveedores",
-          url: "/purchases/providers"
+          url: "/purchases/providers",
         },
-        {
-          title: "Facturas",
-          url: "/purchases/invoices"
-        },
-      ]
+      ],
     },
     {
       title: "Reportes",
       icon: FileText,
-      url: "/reports"
+      url: "/reports",
     },
   ],
-}
+};
 
-export function AppSidebar({ user, ...props }: React.ComponentProps<typeof Sidebar> & { user?: { name: string; email: string; avatar: string } }) {
+export function AppSidebar({
+  user,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & {
+  user?: { name: string; email: string; avatar: string };
+}) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -135,5 +155,5 @@ export function AppSidebar({ user, ...props }: React.ComponentProps<typeof Sideb
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

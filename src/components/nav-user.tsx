@@ -1,13 +1,9 @@
 "use client"
 
 import {
-  BadgeCheck,
-  Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
   Moon,
-  Sparkles,
   Sun,
 } from "lucide-react"
 import { logoutAction } from "@/app/actions/auth"
@@ -102,40 +98,21 @@ export function NavUser({
               <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
                 {theme === 'dark' ? (
                   <>
-                    <Sun className="mr-2 h-4 w-4" />
-                    <span>Modo Claro</span>
+                    <Sun />
+                    Modo Claro
                   </>
                 ) : (
                   <>
-                    <Moon className="mr-2 h-4 w-4" />
-                    <span>Modo Oscuro</span>
+                    <Moon />
+                    Modo Oscuro
                   </>
                 )}
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Sparkles className="mr-2 h-4 w-4" />
-                <span>Upgrade to Pro</span>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
-              Log out
+              Cerrar Sesión
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

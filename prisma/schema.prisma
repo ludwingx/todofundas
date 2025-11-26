@@ -8,58 +8,53 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model Product {
-  id             String       @id @default(uuid())
-  phoneModel     PhoneModel   @relation(fields: [phoneModelId], references: [id])
-  phoneModelId   String
-  color          String
-  stock          Int
-  minStock       Int          @default(5) // stock mínimo para alertas
-  priceRetail    Float        // precio por menor
-  priceWholesale Float        // precio por mayor
-  costPrice      Float        // precio de costo
-  type           ProductType  @relation(fields: [typeId], references: [id])
-  typeId         String
-  supplier       Supplier?    @relation(fields: [supplierId], references: [id])
-  supplierId     String?
-  sales          Sale[]
-  purchases      Purchase[]
-  movements      InventoryMovement[]
-  createdAt      DateTime     @default(now())
-  imageUrl       String?      // URL de la imagen del producto
-  updatedAt      DateTime     @updatedAt
-  status        String       @default("active") // "active" o "deleted"
-
-  @@index([phoneModelId, color])
-  @@index([typeId])
-  @@index([stock])
+// PRIMERO: Modelos básicos que no dependen de otros
+model Brand {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  phoneModels PhoneModel[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  status      String       @default("active")
 }
 
 model PhoneModel {
-  id      String    @id @default(uuid())
-  name    String    @unique
-  status  String    @default("active") // "active" o "deleted"
-  products Product[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String    @id @default(uuid())
+  name      String    @unique
+  brand     Brand     @relation(fields: [brandId], references: [id])
+  brandId   String
+  status    String    @default("active")
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model ProductType {
-  id       String    @id @default(uuid())
-  name     String    @unique // "Funda", "Vidrio", etc.
-  products Product[]
-  status  String    @default("active") // "active" o "deleted"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String    @id @default(uuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  status    String    @default("active")
 }
 
 model Color {
   id        String    @id @default(uuid())
-  name      String    @unique // "Negro", "Rojo", etc.
-  hexCode   String    // Código hexadecimal del color, ej: "#000000"
-  status    String    @default("active") // "active" o "deleted"
+  name      String    @unique
+  hexCode   String
+  status    String    @default("active")
+  products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+model Material {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  status    String    @default("active")
 }
 
 model Supplier {
@@ -73,54 +68,107 @@ model Supplier {
   purchases Purchase[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  status    String     @default("active") // "active" o "deleted"
-}
-
-model Sale {
-  id           String    @id @default(uuid())
-  productId    String
-  product      Product   @relation(fields: [productId], references: [id])
-  quantity     Int
-  unitPrice    Float
-  totalPrice   Float
-  customerName String?
-  customerPhone String?
-  paymentMethod String   @default("efectivo") // efectivo, tarjeta, transferencia
-  notes        String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  clientId     String
-  client       Client    @relation(fields: [clientId], references: [id])
-
-  @@index([createdAt])
-  @@index([productId])
+  status    String     @default("active")
 }
 
 model Client {
-  id        String     @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
   contact   String?
   email     String?
   phone     String?
   address   String?
   sales     Sale[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id                 String              @id @default(uuid())
+  username           String              @unique
+  password           String
+  name               String
+  role               String              @default("user")
+  isActive           Boolean             @default(true)
+  lastLoginAt        DateTime?
+  inventoryMovements InventoryMovement[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([username])
+}
+
+// SEGUNDO: Modelo Product (depende de todos los anteriores)
+model Product {
+  id                 String              @id @default(uuid())
+  phoneModel         PhoneModel          @relation(fields: [phoneModelId], references: [id])
+  phoneModelId       String
+  color              Color               @relation(fields: [colorId], references: [id])
+  colorId            String
+  stock              Int
+  minStock           Int                 @default(5)
+  priceRetail        Float
+  priceWholesale     Float
+  costPrice          Float
+  hasDiscount        Boolean             @default(false)
+  discountPercentage Int?
+  discountPrice      Float?
+  type               ProductType         @relation(fields: [typeId], references: [id])
+  typeId             String
+  supplier           Supplier?           @relation(fields: [supplierId], references: [id])
+  supplierId         String?
+  material           Material?           @relation(fields: [materialId], references: [id])
+  materialId         String?
+  sales              Sale[]
+  purchases          Purchase[]
+  movements          InventoryMovement[]
+  createdAt          DateTime            @default(now())
+  imageUrl           String?
+  updatedAt          DateTime            @updatedAt
+  status             String              @default("active")
+
+  @@index([phoneModelId, colorId])
+  @@index([typeId])
+  @@index([stock])
+  @@index([hasDiscount])
+}
+
+// TERCERO: Modelos de transacciones (dependen de Product)
+model Sale {
+  id              String   @id @default(uuid())
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id])
+  quantity        Int
+  unitPrice       Float
+  originalPrice   Float?
+  discountApplied Float?   @default(0)
+  totalPrice      Float
+  customerName    String?
+  customerPhone   String?
+  paymentMethod   String   @default("efectivo")
+  notes           String?
+  clientId        String
+  client          Client   @relation(fields: [clientId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([productId])
 }
 
 model Purchase {
-  id          String    @id @default(uuid())
-  productId   String
-  product     Product   @relation(fields: [productId], references: [id])
-  supplierId  String
-  supplier    Supplier  @relation(fields: [supplierId], references: [id])
-  quantity    Int
-  unitPrice   Float
-  totalPrice  Float
+  id            String   @id @default(uuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+  supplierId    String
+  supplier      Supplier @relation(fields: [supplierId], references: [id])
+  quantity      Int
+  unitPrice     Float
+  totalPrice    Float
   invoiceNumber String?
-  notes       String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([createdAt])
   @@index([productId])
@@ -128,35 +176,18 @@ model Purchase {
 }
 
 model InventoryMovement {
-  id          String    @id @default(uuid())
-  productId   String
-  product     Product   @relation(fields: [productId], references: [id])
-  type        String    // "entrada", "salida", "ajuste"
-  quantity    Int       // positivo para entrada, negativo para salida
-  reason      String    // "venta", "compra", "ajuste", "devolucion"
-  reference   String?   // referencia a venta, compra, etc.
-  notes       String?
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  createdAt   DateTime  @default(now())
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  type      String
+  quantity  Int
+  reason    String
+  reference String?
+  notes     String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
 
   @@index([productId])
   @@index([createdAt])
-  @@index([type])
-}
-
-model User {
-  id          String   @id @default(uuid())
-  username    String   @unique
-  password    String   // hash de la contraseña
-  name        String
-  role        String   @default("user") // admin, user
-  isActive    Boolean  @default(true)
-  lastLoginAt DateTime?
-  inventoryMovements InventoryMovement[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([username])
-  @@index([isActive])
 }
