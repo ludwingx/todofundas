@@ -12,7 +12,6 @@ type ProductData = {
   supplierId: string | null;
   color: { id: string; name: string; hexCode: string };
   material?: { id: string; name: string } | null;
-  compatibility?: { id: string; name: string; deviceType: string } | null;
   stock: number;
   minStock: number;
   priceRetail: number;
@@ -30,7 +29,6 @@ export default function EditProductClient({
   phoneModels,
   colors,
   materials,
-  compatibilities,
   onSuccess,
 }: {
   product: ProductData;
@@ -39,7 +37,6 @@ export default function EditProductClient({
   phoneModels: BasicRef[];
   colors: { id: string; name: string; hexCode: string }[];
   materials: { id: string; name: string }[];
-  compatibilities: { id: string; name: string; deviceType: string }[];
   onSuccess?: () => void;
 }) {
   const [loading, setLoading] = useState(false);
@@ -102,7 +99,6 @@ export default function EditProductClient({
     ...product,
     colorId: product.color.id,
     materialId: product.material?.id || null,
-    compatibilityId: product.compatibility?.id || null,
   };
 
   return (
@@ -113,7 +109,6 @@ export default function EditProductClient({
       phoneModels={phoneModels}
       colors={colors}
       materials={materials}
-      compatibilities={compatibilities}
       onSubmit={handleProductSubmit}
       loading={loading}
     />

@@ -18,7 +18,6 @@ export type ProductFormProps = {
     supplierId?: string | null;
     colorId?: string;
     materialId?: string | null;
-    compatibilityId?: string | null;
     stock?: number;
     minStock?: number;
     priceRetail?: number | string;
@@ -33,7 +32,6 @@ export type ProductFormProps = {
   phoneModels: { id: string; name: string }[];
   colors: { id: string; name: string; hexCode: string }[];
   materials: { id: string; name: string }[];
-  compatibilities: { id: string; name: string; deviceType: string }[];
   onSubmit: (data: FormData) => void | Promise<void>;
   loading?: boolean;
 };
@@ -45,7 +43,6 @@ export function ProductForm({
   phoneModels,
   colors,
   materials,
-  compatibilities,
   onSubmit,
   loading,
 }: ProductFormProps) {
@@ -55,7 +52,6 @@ export function ProductForm({
     supplierId: product?.supplierId ?? "__none__",
     colorId: product?.colorId || (colors.length > 0 ? colors[0].id : ""),
     materialId: product?.materialId || "__none__",
-    compatibilityId: product?.compatibilityId || "__none__",
     stock: product?.stock ? Number(product.stock) : 0,
     minStock: product?.minStock ? Number(product.minStock) : 5,
     priceRetail: product?.priceRetail ? String(product.priceRetail) : "",
@@ -108,11 +104,7 @@ export function ProductForm({
 
     // Add all form fields
     Object.entries(form).forEach(([key, value]) => {
-      if (
-        key === "supplierId" ||
-        key === "materialId" ||
-        key === "compatibilityId"
-      ) {
+      if (key === "supplierId" || key === "materialId") {
         // Skip if sentinel value
         if (value === "__none__") return;
         if (value) formData.append(key, value as string);
@@ -274,28 +266,6 @@ export function ProductForm({
                   {materials.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
                       {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-1">
-                Compatibilidad (Opcional)
-              </label>
-              <Select
-                value={form.compatibilityId}
-                onValueChange={(v) => handleSelect("compatibilityId", v)}
-              >
-                <SelectTrigger disabled={loading || submitting}>
-                  <SelectValue placeholder="Sin compatibilidad específica" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Sin compatibilidad</SelectItem>
-                  {compatibilities.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name} ({c.deviceType})
                     </SelectItem>
                   ))}
                 </SelectContent>

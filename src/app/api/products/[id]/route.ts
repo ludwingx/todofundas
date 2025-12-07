@@ -85,10 +85,6 @@ export async function PUT(
         data.materialId && data.materialId !== ""
           ? String(data.materialId)
           : null,
-      compatibilityId:
-        data.compatibilityId && data.compatibilityId !== ""
-          ? String(data.compatibilityId)
-          : null,
       stock: Number(data.stock) || 0,
       minStock: data.minStock !== undefined ? Number(data.minStock) : 0,
       priceRetail: Number(data.priceRetail) || 0,

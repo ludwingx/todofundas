@@ -17,7 +17,6 @@ export async function GET() {
         supplier: true,
         color: { select: { id: true, name: true, hexCode: true } },
         material: { select: { id: true, name: true } },
-        compatibility: { select: { id: true, name: true, deviceType: true } },
       },
     });
     return NextResponse.json(products);
@@ -80,9 +79,6 @@ export async function POST(req: NextRequest) {
         supplierId: data.supplierId ? String(data.supplierId) : null,
         colorId: String(data.colorId),
         materialId: data.materialId ? String(data.materialId) : null,
-        compatibilityId: data.compatibilityId
-          ? String(data.compatibilityId)
-          : null,
         stock: Number(data.stock),
         minStock:
           data.minStock !== undefined && data.minStock !== null
