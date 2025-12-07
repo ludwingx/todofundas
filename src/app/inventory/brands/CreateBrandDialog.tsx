@@ -14,11 +14,11 @@ import {
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-type CreateMaterialDialogProps = {
+type CreateBrandDialogProps = {
   onSuccess: () => void;
 };
 
-export function CreateMaterialDialog({ onSuccess }: CreateMaterialDialogProps) {
+export function CreateBrandDialog({ onSuccess }: CreateBrandDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,7 +45,7 @@ export function CreateMaterialDialog({ onSuccess }: CreateMaterialDialogProps) {
     requestInProgress.current = true;
     setLoading(true);
     try {
-      const response = await fetch("/api/materials", {
+      const response = await fetch("/api/brands", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: trimmedName }),
@@ -55,10 +55,10 @@ export function CreateMaterialDialog({ onSuccess }: CreateMaterialDialogProps) {
         throw new Error(data.error || `Error ${response.status}`);
       setName("");
       setOpen(false);
-      toast.success("Material creado exitosamente");
+      toast.success("Marca creada exitosamente");
       onSuccess();
     } catch (error) {
-      let errorMessage = "No se pudo crear el material";
+      let errorMessage = "No se pudo crear la marca";
       if (error instanceof Error) errorMessage = error.message;
       setTimeout(() => {
         toast.error("Error", {
@@ -109,26 +109,26 @@ export function CreateMaterialDialog({ onSuccess }: CreateMaterialDialogProps) {
       <DialogTrigger asChild>
         <Button type="button" onClick={(e) => e.stopPropagation()}>
           <Plus className="h-4 w-4 mr-2" />
-          Nuevo Material
+          Nueva Marca
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit} className="space-y-4">
           <DialogHeader>
-            <DialogTitle>Crear Nuevo Material</DialogTitle>
+            <DialogTitle>Crear Nueva Marca</DialogTitle>
             <DialogDescription>
-              Ingresa el nombre del nuevo material de producto
+              Ingresa el nombre de la nueva marca de producto
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium leading-none">
-              Nombre del Material
+              Nombre de la Marca
             </label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Silicona, TPU, Cuero, etc."
+              placeholder="Ej: Apple, Samsung, Xiaomi, etc."
               autoComplete="off"
               onKeyDown={handleKeyDown}
               disabled={loading}
@@ -148,7 +148,7 @@ export function CreateMaterialDialog({ onSuccess }: CreateMaterialDialogProps) {
               onClick={handleButtonClick}
               disabled={!name.trim() || loading}
             >
-              {loading ? "Creando..." : "Crear Material"}
+              {loading ? "Creando..." : "Crear Marca"}
             </Button>
           </DialogFooter>
         </form>
