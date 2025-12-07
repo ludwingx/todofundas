@@ -13,7 +13,7 @@ export async function GET() {
 // POST: Crear una nueva marca
 export async function POST(req: Request) {
   try {
-    const { name } = await req.json();
+    const { name, logoUrl } = await req.json();
 
     if (!name || name.trim() === "") {
       return NextResponse.json(
@@ -38,6 +38,7 @@ export async function POST(req: Request) {
       data: {
         name: name.trim(),
         status: "active",
+        logoUrl: logoUrl && typeof logoUrl === "string" && logoUrl.trim() !== "" ? logoUrl.trim() : null,
       },
     });
 

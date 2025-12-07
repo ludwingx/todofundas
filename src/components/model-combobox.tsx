@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
-import { fetchPhoneModels, createPhoneModel, deletePhoneModel, updatePhoneModel } from "@/lib/phone-models-api";
+import { fetchPhoneModels, deletePhoneModel, updatePhoneModel } from "@/lib/phone-models-api";
 
 export function ModelCombobox({ name, required, value, onChange }: { name: string; required?: boolean; value?: string; onChange?: (value: string) => void }) {
   const [open, setOpen] = React.useState(false);
@@ -100,20 +100,6 @@ export function ModelCombobox({ name, required, value, onChange }: { name: strin
     setLoading(false);
   }
 
-  // Añadir modelo nuevo
-  async function handleAddModel() {
-    if (!query.trim()) return;
-    setLoading(true);
-    const created = await createPhoneModel(query.trim());
-    setLoading(false);
-    if (created) {
-      setModels((prev) => [...prev, created]);
-      setSelectedId(created.id);
-      setSelectedName(created.name);
-      setOpen(false);
-    }
-  }
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -145,15 +131,9 @@ export function ModelCombobox({ name, required, value, onChange }: { name: strin
                 <span className="text-sm text-muted-foreground">Cargando modelos...</span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground px-2 py-2">
-                Sin resultados
-                <button
-                  className="ml-2 text-primary hover:underline text-xs"
-                  onClick={handleAddModel}
-                  disabled={loading || !query.trim()}
-                >
-                  Agregar &quot;{query}&quot;
-                </button>
+              <div className="flex flex-col items-start text-sm text-muted-foreground px-2 py-2">
+                <span>Sin resultados para este modelo.</span>
+                <span className="text-xs">Puedes crear nuevos modelos desde Configuración &gt; Modelos de Teléfono.</span>
               </div>
             )}
           </CommandEmpty>

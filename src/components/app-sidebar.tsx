@@ -103,6 +103,10 @@ const data = {
       url: "/settings",
       items: [
         {
+          title: "Marcas",
+          url: "/inventory/brands",
+        },
+        {
           title: "Modelos de Teléfono",
           url: "/inventory/phone-models",
         },

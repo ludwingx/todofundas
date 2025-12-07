@@ -22,6 +22,7 @@ export function CreateBrandDialog({ onSuccess }: CreateBrandDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("");
   const requestInProgress = useRef(false);
 
   const handleCreate = async () => {
@@ -48,12 +49,13 @@ export function CreateBrandDialog({ onSuccess }: CreateBrandDialogProps) {
       const response = await fetch("/api/brands", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmedName }),
+        body: JSON.stringify({ name: trimmedName, logoUrl: logoUrl.trim() || undefined }),
       });
       const data = await response.json();
       if (!response.ok)
         throw new Error(data.error || `Error ${response.status}`);
       setName("");
+      setLogoUrl("");
       setOpen(false);
       toast.success("Marca creada exitosamente");
       onSuccess();
@@ -93,6 +95,7 @@ export function CreateBrandDialog({ onSuccess }: CreateBrandDialogProps) {
     setOpen(newOpen);
     if (!newOpen) {
       setName("");
+      setLogoUrl("");
       setLoading(false);
       requestInProgress.current = false;
       toast.dismiss();
@@ -131,6 +134,19 @@ export function CreateBrandDialog({ onSuccess }: CreateBrandDialogProps) {
               placeholder="Ej: Apple, Samsung, Xiaomi, etc."
               autoComplete="off"
               onKeyDown={handleKeyDown}
+              disabled={loading}
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="logoUrl" className="text-sm font-medium leading-none">
+              URL del Logo (opcional)
+            </label>
+            <Input
+              id="logoUrl"
+              value={logoUrl}
+              onChange={(e) => setLogoUrl(e.target.value)}
+              placeholder="https://.../logo.png"
+              autoComplete="off"
               disabled={loading}
             />
           </div>

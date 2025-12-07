@@ -1,5 +1,3 @@
-import PhoneModelsClient from "./PhoneModelsClient"
-import { PhoneModelsActions } from "./PhoneModelsActions"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -51,7 +49,7 @@ export default async function PhoneModelsPage() {
             <h1 className="text-3xl font-bold tracking-tight">Modelos de Teléfono</h1>
             <p className="text-muted-foreground">Administra la lista de modelos disponibles</p>
           </div>
-          <PhoneModelsPageClient userData={userData} />
+          <PhoneModelsPageClient />
         </div>
       </SidebarInset>
     </SidebarProvider>

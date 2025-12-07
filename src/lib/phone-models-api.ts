@@ -22,11 +22,11 @@ export async function updatePhoneModel(id: string, name: string): Promise<{ id: 
   return await res.json();
 }
 
-export async function createPhoneModel(name: string): Promise<{ id: string, name: string } | null> {
+export async function createPhoneModel(name: string, brandId: string): Promise<{ id: string, name: string } | null> {
   const res = await fetch('/api/phone-models', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name })
+    body: JSON.stringify({ name, brandId })
   });
   if (!res.ok) return null;
   return res.json();

@@ -52,7 +52,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('Cuerpo de la solicitud:', body);
     
-    const { name } = body;
+    const { name, brandId } = body as { name?: string; brandId?: string };
+
+    if (!brandId || typeof brandId !== 'string') {
+      console.error('brandId inválido:', brandId);
+      return NextResponse.json(
+        { error: 'Debes seleccionar una marca válida' },
+        { status: 400 }
+      );
+    }
+
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
       console.error('Nombre inválido:', name);
       return NextResponse.json(
@@ -61,44 +70,58 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Evitar duplicados (case-insensitive)
-    console.log('Buscando modelo existente con nombre:', name);
+    // Verificar que la marca exista y esté activa
+    const brand = await prisma.brand.findUnique({
+      where: { id: brandId },
+    });
+
+    if (!brand || brand.status !== 'active') {
+      return NextResponse.json(
+        { error: 'La marca seleccionada no es válida o está inactiva' },
+        { status: 400 }
+      );
+    }
+
+    // Evitar duplicados por marca + nombre (case-insensitive)
+    console.log('Buscando modelo existente con nombre y marca:', name, brandId);
     const existing = await prisma.phoneModel.findFirst({
-      where: { 
-        name: { 
-          equals: name.trim(), 
-          mode: 'insensitive' 
-        } 
+      where: {
+        brandId,
+        name: {
+          equals: name.trim(),
+          mode: 'insensitive',
+        },
       },
     });
     
     if (existing) {
-      console.log('Modelo ya existe:', existing);
+      console.log('Modelo ya existe para esa marca:', existing);
       return NextResponse.json(
         { 
-          error: 'Ya existe un modelo con ese nombre',
-          existing
+          error: 'Ya existe un modelo con ese nombre para esta marca',
+          existing,
         }, 
         { status: 409 }
       );
     }
     
-    console.log('Creando nuevo modelo con nombre:', name);
+    console.log('Creando nuevo modelo con nombre y marca:', name, brandId);
     const created = await prisma.phoneModel.create({ 
       data: { 
-        name: name.trim() 
-      } 
+        name: name.trim(),
+        brandId,
+      }, 
     });
     
     console.log('Modelo creado exitosamente:', created);
     return NextResponse.json(created, { status: 201 });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error en POST /api/phone-models:', error);
     return NextResponse.json(
       { 
         error: 'Error al crear modelo',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
       }, 
       { status: 500 }
     );
