@@ -214,9 +214,9 @@ export function ProductForm({
                     </Button>
                   </label>
                 </div>
-                <FormDescription>
+                <p className="text-xs text-muted-foreground">
                   Recomendado: 500x500px, formato JPG o PNG
-                </FormDescription>
+                </p>
                 {form.formState.errors.image && (
                   <p className="text-xs font-medium text-destructive">
                     {String(form.formState.errors.image.message || "")}
