@@ -115,11 +115,11 @@ const data = {
           url: "/inventory/colors",
         },
         {
-          title: "Tipos de Producto",
+          title: "Tipos de Productos",
           url: "/inventory/types",
         },
         {
-          title: "Materiales",
+          title: "Tipos de Materiales",
           url: "/inventory/materials",
         },
         {

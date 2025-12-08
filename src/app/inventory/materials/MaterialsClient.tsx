@@ -33,12 +33,14 @@ interface MaterialsClientProps {
   showDeleted: boolean;
   onMaterialCreated: () => void;
   onDeletedCountChange?: (count: number) => void;
+  reloadKey?: number;
 }
 
 export default function MaterialsClient({
   showDeleted,
   onMaterialCreated,
   onDeletedCountChange,
+  reloadKey,
 }: MaterialsClientProps) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [deletedCount, setDeletedCount] = useState(0);
@@ -81,7 +83,7 @@ export default function MaterialsClient({
 
   useEffect(() => {
     load();
-  }, [showDeleted]);
+  }, [showDeleted, reloadKey]);
 
   async function load() {
     setLoading(true);

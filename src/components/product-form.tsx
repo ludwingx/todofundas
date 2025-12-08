@@ -1,5 +1,9 @@
 "use client";
-import React, { useState, useEffect } from "react";
+
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,30 +13,72 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Checkbox } from "./ui/checkbox";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@radix-ui/react-switch";
+
+// Esquema de validación Zod
+const productSchema = z
+  .object({
+    phoneModelId: z.string().min(1, "El modelo es requerido"),
+    typeId: z.string().min(1, "El tipo es requerido"),
+    supplierId: z.string().optional().nullable(),
+    colorId: z.string().min(1, "El color es requerido"),
+    materialId: z.string().optional().nullable(),
+    stock: z.coerce.number().min(0, "El stock no puede ser negativo").default(0),
+    minStock: z
+      .coerce.number()
+      .min(0, "El stock mínimo no puede ser negativo")
+      .default(5),
+    priceRetail: z
+      .coerce.number()
+      .min(0, "El precio no puede ser negativo"),
+    priceWholesale: z
+      .coerce.number()
+      .min(0, "El precio no puede ser negativo"),
+    costPrice: z
+      .coerce.number()
+      .min(0, "El costo no puede ser negativo"),
+    hasDiscount: z.boolean().default(false),
+    discountPercentage: z.coerce.number().min(0).max(100).optional().nullable(),
+    discountPrice: z.coerce.number().min(0).optional().nullable(),
+    image: z.instanceof(File).optional().nullable(),
+  })
+  .refine(
+    (data) => data.priceWholesale <= data.priceRetail,
+    {
+      message: "El precio mayorista debe ser menor o igual al precio minorista",
+      path: ["priceWholesale"],
+    }
+  )
+  .refine(
+    (data) =>
+      !data.hasDiscount ||
+      (data.discountPercentage !== undefined && data.discountPercentage !== null && data.discountPercentage > 0),
+    {
+      message: "El porcentaje de descuento es requerido cuando hay descuento",
+      path: ["discountPercentage"],
+    }
+  );
+
+export type ProductFormData = z.infer<typeof productSchema>;
 
 export type ProductFormProps = {
-  product?: {
-    phoneModelId?: string;
-    typeId?: string;
-    supplierId?: string | null;
-    colorId?: string;
-    materialId?: string | null;
-    stock?: number;
-    minStock?: number;
-    priceRetail?: number | string;
-    priceWholesale?: number | string;
-    costPrice?: number | string;
-    hasDiscount?: boolean;
-    discountPercentage?: number | null;
-    discountPrice?: number | null;
-  };
+  product?: Partial<ProductFormData>;
   productTypes: { id: string; name: string }[];
   suppliers: { id: string; name: string }[];
   phoneModels: { id: string; name: string }[];
   colors: { id: string; name: string; hexCode: string }[];
   materials: { id: string; name: string }[];
-  onSubmit: (data: FormData) => void | Promise<void>;
+  onSubmit: (data: ProductFormData & { image?: File }) => void | Promise<void>;
   loading?: boolean;
 };
 
@@ -46,406 +92,530 @@ export function ProductForm({
   onSubmit,
   loading,
 }: ProductFormProps) {
-  const [form, setForm] = useState(() => ({
-    phoneModelId: product?.phoneModelId || "",
-    typeId: product?.typeId || "",
-    supplierId: product?.supplierId ?? "__none__",
-    colorId: product?.colorId || (colors.length > 0 ? colors[0].id : ""),
-    materialId: product?.materialId || "__none__",
-    stock: product?.stock ? Number(product.stock) : 0,
-    minStock: product?.minStock ? Number(product.minStock) : 5,
-    priceRetail: product?.priceRetail ? String(product.priceRetail) : "",
-    priceWholesale: product?.priceWholesale
-      ? String(product.priceWholesale)
-      : "",
-    costPrice: product?.costPrice ? String(product.costPrice) : "",
-    hasDiscount: product?.hasDiscount || false,
-    discountPercentage: product?.discountPercentage
-      ? String(product.discountPercentage)
-      : "",
-  }));
-
-  const [submitting, setSubmitting] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [discountPrice, setDiscountPrice] = useState<number>(0);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Calculate discount price when retail price or discount percentage changes
+  const form = useForm<any>({
+    resolver: zodResolver(productSchema) as any,
+    defaultValues: {
+      phoneModelId: product?.phoneModelId || "",
+      typeId: product?.typeId || "",
+      supplierId: product?.supplierId || null,
+      colorId: product?.colorId || (colors.length > 0 ? colors[0].id : ""),
+      materialId: product?.materialId || null,
+      stock: product?.stock || 0,
+      minStock: product?.minStock || 5,
+      priceRetail: product?.priceRetail || undefined,
+      priceWholesale: product?.priceWholesale || undefined,
+      costPrice: product?.costPrice || undefined,
+      hasDiscount: product?.hasDiscount || false,
+      discountPercentage: product?.discountPercentage || undefined,
+      discountPrice: product?.discountPrice || undefined,
+    },
+  });
+
+  const hasDiscount = form.watch("hasDiscount");
+  const discountPercentage = form.watch("discountPercentage");
+  const priceRetail = form.watch("priceRetail");
+
+  // Calcular precio con descuento
   useEffect(() => {
-    if (form.hasDiscount && form.discountPercentage && form.priceRetail) {
-      const retail = Number(form.priceRetail);
-      const discount = Number(form.discountPercentage);
-      const calculated = retail - (retail * discount) / 100;
-      setDiscountPrice(calculated);
+    if (hasDiscount && discountPercentage && priceRetail) {
+      const discountPrice = priceRetail - (priceRetail * discountPercentage) / 100;
+      form.setValue("discountPrice", parseFloat(discountPrice.toFixed(2)), {
+        shouldValidate: true,
+      });
     } else {
-      setDiscountPrice(0);
+      form.setValue("discountPrice", undefined);
     }
-  }, [form.hasDiscount, form.discountPercentage, form.priceRetail]);
+  }, [hasDiscount, discountPercentage, priceRetail, form]);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value, type, files } = e.target;
-    if (type === "file" && files && files[0]) {
-      setImageFile(files[0]);
-      setImagePreview(URL.createObjectURL(files[0]));
-    } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
+  // Manejar preview de imagen
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      form.setValue("image", file, { shouldValidate: true });
+      setImagePreview(URL.createObjectURL(file));
     }
-  }
+  };
 
-  function handleSelect(name: string, value: string) {
-    setForm((prev) => ({ ...prev, [name]: value }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const handleSubmit = async (data: any) => {
     setSubmitting(true);
-
-    const formData = new FormData();
-
-    // Add all form fields
-    Object.entries(form).forEach(([key, value]) => {
-      if (key === "supplierId" || key === "materialId") {
-        // Skip if sentinel value
-        if (value === "__none__") return;
-        if (value) formData.append(key, value as string);
-        return;
-      }
-
-      // Convert numeric values
-      if (
-        [
-          "stock",
-          "minStock",
-          "priceRetail",
-          "priceWholesale",
-          "costPrice",
-          "discountPercentage",
-        ].includes(key)
-      ) {
-        if (value !== "" && value !== undefined) {
-          formData.append(key, value.toString());
-        }
-      } else if (key === "hasDiscount") {
-        formData.append(key, value.toString());
-      } else if (value !== undefined && value !== null && value !== "") {
-        formData.append(key, value as string);
-      }
-    });
-
-    // Add calculated discount price
-    if (form.hasDiscount && discountPrice > 0) {
-      formData.append("discountPrice", discountPrice.toString());
-    }
-
-    // Add image if provided
-    if (imageFile) {
-      formData.append("image", imageFile);
-    }
-
     try {
-      await onSubmit(formData);
+      await onSubmit(data);
+      // Si el envío fue exitoso, resetear el formulario si no es edición
+      if (!product) {
+        form.reset();
+        setImagePreview(null);
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const hasRequiredMasters =
+    productTypes.length > 0 && phoneModels.length > 0 && colors.length > 0;
+
+  if (!hasRequiredMasters) {
+    return (
+      <Card className="border-yellow-400">
+        <CardContent className="pt-6">
+          <div className="text-sm text-yellow-800">
+            <p className="font-medium mb-2">
+              Para registrar un producto primero debes crear al menos:
+            </p>
+            <ul className="list-disc list-inside space-y-1">
+              {productTypes.length === 0 && <li>Al menos un Tipo de Producto</li>}
+              {phoneModels.length === 0 && <li>Al menos un Modelo de Teléfono</li>}
+              {colors.length === 0 && <li>Al menos un Color</li>}
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
-  const selectedColor = colors.find((c) => c.id === form.colorId);
-
   return (
-    <div className="w-full max-w-none p-0">
-      <form className="space-y-4 w-full" onSubmit={handleSubmit}>
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Imagen */}
-          <div className="md:w-1/3 flex flex-col items-center justify-start gap-4">
-            <label className="block text-sm font-medium mb-1 w-full">
-              Imagen
-            </label>
-            <Input
-              name="image"
-              type="file"
-              accept="image/*"
-              onChange={handleChange}
-              disabled={loading || submitting}
-              className="w-full"
-            />
-            {imagePreview && (
-              <img
-                src={imagePreview}
-                alt="Vista previa"
-                className="mt-2 rounded-lg border border-muted shadow-sm max-h-40 w-auto object-contain bg-white"
-              />
-            )}
-          </div>
-
-          {/* Campos */}
-          <div className="md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Modelo</label>
-              <Select
-                value={form.phoneModelId}
-                onValueChange={(v) => handleSelect("phoneModelId", v)}
-              >
-                <SelectTrigger disabled={loading || submitting}>
-                  <SelectValue placeholder="Seleccionar modelo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {phoneModels.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Tipo</label>
-              <Select
-                value={form.typeId}
-                onValueChange={(v) => handleSelect("typeId", v)}
-              >
-                <SelectTrigger disabled={loading || submitting}>
-                  <SelectValue placeholder="Seleccionar tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {productTypes.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Color *</label>
-              <Select
-                value={form.colorId}
-                onValueChange={(v) => handleSelect("colorId", v)}
-              >
-                <SelectTrigger disabled={loading || submitting}>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-4 h-4 rounded-full border flex-shrink-0"
-                      style={{
-                        backgroundColor: selectedColor?.hexCode || "#000",
-                      }}
-                    />
-                    <span>{selectedColor?.name || "Seleccionar"}</span>
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {colors.map((color) => (
-                    <SelectItem key={color.id} value={color.id}>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-4 h-4 rounded-full border flex-shrink-0"
-                          style={{ backgroundColor: color.hexCode }}
-                        />
-                        <span>{color.name}</span>
+    <div className="w-full">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Columna de imagen */}
+            <div className="md:col-span-1 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Imagen del producto</label>
+                <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-muted-foreground/25 rounded-lg hover:border-muted-foreground/50 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <label
+                    htmlFor="image-upload"
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    {imagePreview ? (
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-48 h-48 object-contain rounded-lg mb-2"
+                      />
+                    ) : (
+                      <div className="w-48 h-48 flex items-center justify-center bg-muted rounded-lg mb-2">
+                        <span className="text-muted-foreground">Click para subir imagen</span>
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Material (Opcional)
-              </label>
-              <Select
-                value={form.materialId}
-                onValueChange={(v) => handleSelect("materialId", v)}
-              >
-                <SelectTrigger disabled={loading || submitting}>
-                  <SelectValue placeholder="Sin material" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Sin material</SelectItem>
-                  {materials.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Proveedor
-              </label>
-              <Select
-                value={form.supplierId}
-                onValueChange={(v) => handleSelect("supplierId", v)}
-              >
-                <SelectTrigger disabled={loading || submitting}>
-                  <SelectValue placeholder="Seleccionar proveedor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Sin proveedor</SelectItem>
-                  {suppliers.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Stock mínimo
-              </label>
-              <Input
-                name="minStock"
-                type="number"
-                value={form.minStock}
-                onChange={handleChange}
-                min={0}
-                required
-                disabled={loading || submitting}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Precio costo (BOB)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  Bs.
-                </span>
-                <Input
-                  name="costPrice"
-                  type="number"
-                  value={form.costPrice}
-                  onChange={handleChange}
-                  min={0}
-                  step="0.01"
-                  required
-                  disabled={loading || submitting}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Precio mayorista (BOB)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  Bs.
-                </span>
-                <Input
-                  name="priceWholesale"
-                  type="number"
-                  value={form.priceWholesale}
-                  onChange={handleChange}
-                  min={0}
-                  step="0.01"
-                  required
-                  disabled={loading || submitting}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Precio minorista (BOB)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  Bs.
-                </span>
-                <Input
-                  name="priceRetail"
-                  type="number"
-                  value={form.priceRetail}
-                  onChange={handleChange}
-                  min={0}
-                  step="0.01"
-                  required
-                  disabled={loading || submitting}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-
-            {/* Discount Fields */}
-            <div className="md:col-span-2 border-t pt-4">
-              <div className="flex items-center space-x-2 mb-3">
-                <Checkbox
-                  id="hasDiscount"
-                  checked={form.hasDiscount}
-                  onCheckedChange={(checked) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      hasDiscount: checked as boolean,
-                    }))
-                  }
-                  disabled={loading || submitting}
-                />
-                <label htmlFor="hasDiscount" className="text-sm font-medium">
-                  Este producto tiene descuento
-                </label>
-              </div>
-
-              {form.hasDiscount && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Descuento (%)
-                    </label>
-                    <Input
-                      name="discountPercentage"
-                      type="number"
-                      value={form.discountPercentage}
-                      onChange={handleChange}
-                      min={0}
-                      max={100}
-                      step="1"
-                      placeholder="Ej: 10, 20, 50"
-                      disabled={loading || submitting}
-                    />
-                  </div>
-                  {discountPrice > 0 && (
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Precio con descuento
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                          Bs.
-                        </span>
-                        <Input
-                          type="text"
-                          value={discountPrice.toFixed(2)}
-                          disabled
-                          className="pl-8 bg-muted"
-                        />
-                      </div>
-                    </div>
-                  )}
+                    )}
+                    <Button type="button" variant="outline" size="sm">
+                      {imagePreview ? "Cambiar imagen" : "Subir imagen"}
+                    </Button>
+                  </label>
                 </div>
-              )}
+                <FormDescription>
+                  Recomendado: 500x500px, formato JPG o PNG
+                </FormDescription>
+                {form.formState.errors.image && (
+                  <p className="text-xs font-medium text-destructive">
+                    {String(form.formState.errors.image.message || "")}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Columna de campos */}
+            <div className="md:col-span-2 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Modelo */}
+                <FormField
+                  control={form.control}
+                  name="phoneModelId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Modelo *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar modelo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {phoneModels.map((model) => (
+                            <SelectItem key={model.id} value={model.id}>
+                              {model.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Tipo */}
+                <FormField
+                  control={form.control}
+                  name="typeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {productTypes.map((type) => (
+                            <SelectItem key={type.id} value={type.id}>
+                              {type.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Color */}
+                <FormField
+                  control={form.control}
+                  name="colorId"
+                  render={({ field }) => {
+                    const selectedColor = colors.find(c => c.id === field.value);
+                    return (
+                      <FormItem>
+                        <FormLabel>Color *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-4 h-4 rounded-full border"
+                                  style={{ backgroundColor: selectedColor?.hexCode || "#ccc" }}
+                                />
+                                <span>{selectedColor?.name || "Seleccionar color"}</span>
+                              </div>
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {colors.map((color) => (
+                              <SelectItem key={color.id} value={color.id}>
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-4 h-4 rounded-full border"
+                                    style={{ backgroundColor: color.hexCode }}
+                                  />
+                                  <span>{color.name}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+
+                {/* Material */}
+                <FormField
+                  control={form.control}
+                  name="materialId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Material</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value || ""}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sin material" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Sin material</SelectItem>
+                          {materials.map((material) => (
+                            <SelectItem key={material.id} value={material.id}>
+                              {material.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Proveedor */}
+                <FormField
+                  control={form.control}
+                  name="supplierId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Proveedor</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value || ""}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sin proveedor" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Sin proveedor</SelectItem>
+                          {suppliers.map((supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.id}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Stock */}
+                <FormField
+                  control={form.control}
+                  name="stock"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Stock</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Stock Mínimo */}
+                <FormField
+                  control={form.control}
+                  name="minStock"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Stock Mínimo</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          {...field}
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Alerta cuando el stock esté por debajo de este número
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Precios */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
+                <FormField
+                  control={form.control}
+                  name="costPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Costo (BOB) *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">
+                            Bs.
+                          </span>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            className="pl-10"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="priceWholesale"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Precio Mayorista (BOB) *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">
+                            Bs.
+                          </span>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            className="pl-10"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="priceRetail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Precio Minorista (BOB) *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">
+                            Bs.
+                          </span>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            className="pl-10"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Descuento */}
+              <div className="pt-4 border-t">
+                <FormField
+                  control={form.control}
+                  name="hasDiscount"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Aplicar descuento</FormLabel>
+                        <FormDescription>
+                          Activar para ofrecer este producto con descuento
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {hasDiscount && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <FormField
+                      control={form.control}
+                      name="discountPercentage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Porcentaje de descuento (%)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="discountPrice"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Precio con descuento</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm">
+                                Bs.
+                              </span>
+                              <Input
+                                className="pl-10 bg-muted"
+                                readOnly
+                                value={field.value?.toFixed(2) || ""}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            Precio calculado automáticamente
+                          </FormDescription>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="pt-3 flex justify-end">
-          <Button type="submit" disabled={loading || submitting}>
-            {submitting || loading
-              ? "Guardando..."
-              : product
-              ? "Guardar cambios"
-              : "Registrar Producto"}
-          </Button>
-        </div>
-      </form>
+          <div className="flex justify-end pt-6 border-t">
+            <Button
+              type="submit"
+              disabled={submitting || loading || !form.formState.isValid}
+              className="min-w-[200px]"
+            >
+              {(submitting || loading) ? (
+                <>
+                  <span className="animate-spin mr-2">⟳</span>
+                  Guardando...
+                </>
+              ) : product ? (
+                "Guardar cambios"
+              ) : (
+                "Registrar Producto"
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 }

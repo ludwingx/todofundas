@@ -6,9 +6,10 @@ import { ProductTypesActions } from "./ProductTypesActions";
 export default function ProductTypesPageClient() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedCount, setDeletedCount] = useState(0);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const handleTypeCreated = useCallback(() => {
-    // El hijo recargará la lista y actualizará el contador automáticamente
+    setReloadKey((key) => key + 1);
   }, []);
 
   return (
@@ -25,6 +26,7 @@ export default function ProductTypesPageClient() {
         showDeleted={showDeleted}
         onTypeCreated={handleTypeCreated}
         onDeletedCountChange={setDeletedCount}
+        reloadKey={reloadKey}
       />
     </>
   );

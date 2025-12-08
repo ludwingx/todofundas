@@ -83,9 +83,6 @@ export default async function ProductsPage() {
       material: {
         select: { id: true, name: true },
       },
-      compatibility: {
-        select: { id: true, name: true, deviceType: true },
-      },
     },
     orderBy: { createdAt: "desc" },
   });

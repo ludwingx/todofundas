@@ -6,9 +6,10 @@ import { MaterialsActions } from "./MaterialsActions";
 export default function MaterialsPageClient() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedCount, setDeletedCount] = useState(0);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const handleMaterialCreated = useCallback(() => {
-    // El hijo recargará la lista y actualizará el contador automáticamente
+    setReloadKey((key) => key + 1);
   }, []);
 
   return (
@@ -25,6 +26,7 @@ export default function MaterialsPageClient() {
         showDeleted={showDeleted}
         onMaterialCreated={handleMaterialCreated}
         onDeletedCountChange={setDeletedCount}
+        reloadKey={reloadKey}
       />
     </>
   );

@@ -58,6 +58,15 @@ model Material {
   status    String    @default("active")
 }
 
+model Compatibility {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  deviceType String
+  status     String   @default("active")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
 model Supplier {
   id        String     @id @default(uuid())
   name      String

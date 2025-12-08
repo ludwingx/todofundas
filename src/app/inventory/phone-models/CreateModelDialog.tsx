@@ -19,6 +19,7 @@ export function CreateModelDialog({ onSuccess }: CreateModelDialogProps) {
   const [brandsLoading, setBrandsLoading] = useState(false);
   const [brands, setBrands] = useState<{ id: string; name: string; logoUrl?: string | null }[]>([]);
   const [brandId, setBrandId] = useState("");
+  const [step, setStep] = useState<1 | 2>(1);
   const requestInProgress = useRef(false);
 
   useEffect(() => {
@@ -158,6 +159,7 @@ export function CreateModelDialog({ onSuccess }: CreateModelDialogProps) {
       setName("");
       setLoading(false);
       setBrandId("");
+      setStep(1);
       requestInProgress.current = false;
       toast.dismiss();
     }
@@ -182,94 +184,146 @@ export function CreateModelDialog({ onSuccess }: CreateModelDialogProps) {
           <DialogHeader>
             <DialogTitle>Crear Nuevo Modelo</DialogTitle>
             <DialogDescription>
-              Ingresa el nombre del nuevo modelo de teléfono
+              {step === 1
+                ? "Selecciona primero la marca para este modelo."
+                : "Ahora ingresa el nombre del modelo para la marca seleccionada."}
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium leading-none">
-              Marca
-            </label>
-            {brandsLoading ? (
-              <p className="text-sm text-muted-foreground">Cargando marcas...</p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto pr-1">
-                {brands.map((brand) => {
-                  const selected = brandId === brand.id;
+          {step === 1 ? (
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none">
+                Marca
+              </label>
+              {brandsLoading ? (
+                <p className="text-sm text-muted-foreground">Cargando marcas...</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto pr-1">
+                  {brands.map((brand) => {
+                    const selected = brandId === brand.id;
+                    return (
+                      <button
+                        key={brand.id}
+                        type="button"
+                        onClick={() => setBrandId(brand.id)}
+                        className={`text-left rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                          selected
+                            ? "border-primary ring-1 ring-primary bg-primary/5"
+                            : "border-border hover:bg-muted"
+                        }`}
+                        disabled={loading}
+                      >
+                        <Card className="border-0 shadow-none bg-transparent">
+                          <CardContent className="px-2 py-2 flex flex-col items-center gap-1.5">
+                            {brand.logoUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={brand.logoUrl}
+                                alt={brand.name}
+                                className="h-8 w-8 object-contain"
+                              />
+                            ) : (
+                              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
+                                {brand.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <span className="text-[11px] font-medium text-center leading-snug line-clamp-2">
+                              {brand.name}
+                            </span>
+                          </CardContent>
+                        </Card>
+                      </button>
+                    );
+                  })}
+                  {brands.length === 0 && !brandsLoading && (
+                    <p className="col-span-full text-sm text-muted-foreground">
+                      No hay marcas disponibles. Crea una marca primero.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium leading-none">Marca seleccionada</label>
+                {(() => {
+                  const selectedBrand = brands.find((b) => b.id === brandId);
+                  if (!selectedBrand) return null;
                   return (
-                    <button
-                      key={brand.id}
-                      type="button"
-                      onClick={() => setBrandId(brand.id)}
-                      className={`text-left rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                        selected
-                          ? "border-primary ring-1 ring-primary bg-primary/5"
-                          : "border-border hover:bg-muted"
-                      }`}
-                      disabled={loading}
-                    >
-                      <Card className="border-0 shadow-none bg-transparent">
-                        <CardContent className="p-3 flex flex-col items-center gap-2">
-                          {brand.logoUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={brand.logoUrl}
-                              alt={brand.name}
-                              className="h-10 w-10 object-contain"
-                            />
-                          ) : (
-                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
-                              {brand.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <span className="text-xs font-medium text-center line-clamp-2">
-                            {brand.name}
-                          </span>
-                        </CardContent>
-                      </Card>
-                    </button>
+                    <div className="flex items-center gap-3 rounded-md border bg-muted/40 px-3 py-2">
+                      {selectedBrand.logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={selectedBrand.logoUrl}
+                          alt={selectedBrand.name}
+                          className="h-8 w-8 object-contain rounded-full bg-white"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold">
+                          {selectedBrand.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span className="text-sm font-medium">{selectedBrand.name}</span>
+                    </div>
                   );
-                })}
-                {brands.length === 0 && !brandsLoading && (
-                  <p className="col-span-full text-sm text-muted-foreground">
-                    No hay marcas disponibles. Crea una marca primero.
-                  </p>
-                )}
+                })()}
               </div>
-            )}
-          </div>
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium leading-none">
+                  Nombre del Modelo
+                </label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ej: 15 Pro Max"
+                  autoComplete="off"
+                  onKeyDown={handleKeyDown}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          )}
 
-          <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium leading-none">
-              Nombre del Modelo
-            </label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: iPhone 15 Pro Max"
-              autoComplete="off"
-              onKeyDown={handleKeyDown}
-              disabled={loading}
-            />
-          </div>
-          
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setOpen(false)}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (step === 1) {
+                  setOpen(false);
+                } else {
+                  setStep(1);
+                }
+              }}
               disabled={loading}
             >
-              Cancelar
+              {step === 1 ? "Cancelar" : "Atrás"}
             </Button>
-            <Button 
-              type="button" // Cambiado a type="button" para evitar submit doble
-              onClick={handleButtonClick}
-              disabled={!name.trim() || !brandId || loading}
-            >
-              {loading ? "Creando..." : "Crear Modelo"}
-            </Button>
+            {step === 1 ? (
+              brands.length === 0 ? null : (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!brandId) {
+                      return;
+                    }
+                    setStep(2);
+                  }}
+                  disabled={loading || brandsLoading || !brandId}
+                >
+                  Siguiente
+                </Button>
+              )
+            ) : (
+              <Button
+                type="button"
+                onClick={handleButtonClick}
+                disabled={!name.trim() || !brandId || loading}
+              >
+                {loading ? "Creando..." : "Crear Modelo"}
+              </Button>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

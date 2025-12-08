@@ -33,12 +33,14 @@ interface BrandsClientProps {
   showDeleted: boolean;
   onBrandCreated: () => void;
   onDeletedCountChange?: (count: number) => void;
+  reloadKey?: number;
 }
 
 export default function BrandsClient({
   showDeleted,
   onBrandCreated,
   onDeletedCountChange,
+  reloadKey,
 }: BrandsClientProps) {
   const [Brands, setBrands] = useState<Brand[]>([]);
   const [deletedCount, setDeletedCount] = useState(0);
@@ -81,7 +83,7 @@ export default function BrandsClient({
 
   useEffect(() => {
     load();
-  }, [showDeleted]);
+  }, [showDeleted, reloadKey]);
 
   async function load() {
     setLoading(true);

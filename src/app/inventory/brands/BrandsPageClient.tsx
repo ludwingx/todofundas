@@ -6,9 +6,10 @@ import { BrandsActions } from "./BrandsActions";
 export default function BrandsPageClient() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedCount, setDeletedCount] = useState(0);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const handleBrandCreated = useCallback(() => {
-    // El hijo recargará la lista y actualizará el contador automáticamente
+    setReloadKey((key) => key + 1);
   }, []);
 
   return (
@@ -24,6 +25,7 @@ export default function BrandsPageClient() {
       <BrandsClient
         showDeleted={showDeleted}
         onBrandCreated={handleBrandCreated}
+        reloadKey={reloadKey}
         onDeletedCountChange={setDeletedCount}
       />
     </>

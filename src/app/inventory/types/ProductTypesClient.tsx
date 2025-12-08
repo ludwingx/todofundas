@@ -21,9 +21,10 @@ interface ProductTypesClientProps {
   showDeleted: boolean;
   onTypeCreated: () => void;
   onDeletedCountChange?: (count: number) => void;
+  reloadKey?: number;
 }
 
-export default function ProductTypesClient({ showDeleted, onTypeCreated, onDeletedCountChange }: ProductTypesClientProps) {
+export default function ProductTypesClient({ showDeleted, onTypeCreated, onDeletedCountChange, reloadKey }: ProductTypesClientProps) {
   const [types, setTypes] = useState<ProductType[]>([]);
   const [deletedCount, setDeletedCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -65,7 +66,7 @@ export default function ProductTypesClient({ showDeleted, onTypeCreated, onDelet
 
   useEffect(() => {
     load();
-  }, [showDeleted]);
+  }, [showDeleted, reloadKey]);
 
   async function load() {
     setLoading(true);
@@ -129,14 +130,6 @@ export default function ProductTypesClient({ showDeleted, onTypeCreated, onDelet
   }
   async function handleTypeCreated() {
     if (onTypeCreated) onTypeCreated();
-    try {
-      await load();
-      toast.success("Tipo creado exitosamente");
-    } catch (error) {
-      toast.error("Error", {
-        description: "Se creó el tipo pero hubo un error al actualizar la lista"
-      });
-    }
   }
 
   return (

@@ -7,10 +7,7 @@ import { useState, useCallback, useEffect } from "react";
 export default function PhoneModelsPageClient() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedCount, setDeletedCount] = useState(0);
-
-  const handleModelCreated = useCallback(() => {
-    fetchDeletedCount();
-  }, []);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const fetchDeletedCount = useCallback(async () => {
     try {
@@ -21,6 +18,11 @@ export default function PhoneModelsPageClient() {
       }
     } catch {}
   }, []);
+
+  const handleModelCreated = useCallback(() => {
+    setReloadKey((key) => key + 1);
+    fetchDeletedCount();
+  }, [fetchDeletedCount]);
 
   useEffect(() => {
     fetchDeletedCount();
@@ -36,7 +38,7 @@ export default function PhoneModelsPageClient() {
           onModelCreated={handleModelCreated}
         />
       </div>
-      <PhoneModelsClient showDeleted={showDeleted} onModelCreated={handleModelCreated} />
+      <PhoneModelsClient showDeleted={showDeleted} onModelCreated={handleModelCreated} reloadKey={reloadKey} />
     </div>
   );
 }

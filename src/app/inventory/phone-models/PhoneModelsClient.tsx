@@ -20,9 +20,10 @@ type PhoneModel = { id: string; name: string; status: string };
 interface PhoneModelsClientProps {
   showDeleted: boolean;
   onModelCreated: () => void;
+  reloadKey?: number;
 }
 
-export default function PhoneModelsClient({ showDeleted, onModelCreated }: PhoneModelsClientProps) {
+export default function PhoneModelsClient({ showDeleted, onModelCreated, reloadKey }: PhoneModelsClientProps) {
   const [models, setModels] = useState<PhoneModel[]>([]);
   const [deletedCount, setDeletedCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -55,7 +56,7 @@ export default function PhoneModelsClient({ showDeleted, onModelCreated }: Phone
 
   useEffect(() => {
     load();
-  }, [showDeleted]);
+  }, [showDeleted, reloadKey]);
 
   useEffect(() => {
     async function fetchDeletedCount() {
