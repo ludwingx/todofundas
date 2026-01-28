@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { ChevronRight, type LucideIcon } from "lucide-react"
-import Link from "next/link"
-import { useState, useEffect } from "react"
-import { usePathname } from "next/navigation"
+import { ChevronRight, type LucideIcon } from "lucide-react";
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -19,81 +19,86 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 type NavItem = {
-  title: string
-  url: string
-  icon?: LucideIcon
-  isActive?: boolean
+  title: string;
+  url: string;
+  icon?: LucideIcon;
+  isActive?: boolean;
   items?: {
-    title: string
-    url: string
-  }[]
-}
+    title: string;
+    url: string;
+  }[];
+};
 
-const STORAGE_KEY = "sidebar-nav-state"
+const STORAGE_KEY = "sidebar-nav-state";
 
 function getStoredState(itemTitle: string): boolean | null {
-  if (typeof window === "undefined") return null
+  if (typeof window === "undefined") return null;
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (!stored) return null
-    const state = JSON.parse(stored)
-    return state[itemTitle] ?? null
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    const state = JSON.parse(stored);
+    return state[itemTitle] ?? null;
   } catch {
-    return null
+    return null;
   }
 }
 
 function setStoredState(itemTitle: string, isOpen: boolean) {
-  if (typeof window === "undefined") return
+  if (typeof window === "undefined") return;
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    const state = stored ? JSON.parse(stored) : {}
-    state[itemTitle] = isOpen
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const state = stored ? JSON.parse(stored) : {};
+    state[itemTitle] = isOpen;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
     // Ignore storage errors
   }
 }
 
 function NavMenuItem({ item }: { item: NavItem }) {
-  const pathname = usePathname()
-  const [isMounted, setIsMounted] = useState(false)
-  
+  const pathname = usePathname();
+  const [isMounted, setIsMounted] = useState(false);
+
   // Check if current path matches this item or any of its subitems
-  const isCurrentPath = pathname === item.url || 
-    (item.items?.some(subItem => pathname === subItem.url || pathname.startsWith(subItem.url + '/')) ?? false)
-  
+  const isCurrentPath =
+    pathname === item.url ||
+    (item.items?.some(
+      (subItem) =>
+        pathname === subItem.url || pathname.startsWith(subItem.url + "/"),
+    ) ??
+      false);
+
   // Initialize state as closed by default, will be updated in useEffect
-  const [isOpen, setIsOpen] = useState(false)
-  
+  const [isOpen, setIsOpen] = useState(false);
+
   // Set initial state in useEffect to avoid hydration mismatch
   useEffect(() => {
-    setIsMounted(true)
-    const stored = getStoredState(item.title)
+    setIsMounted(true);
+    const stored = getStoredState(item.title);
     if (stored !== null) {
-      setIsOpen(stored)
+      setIsOpen(stored);
     } else if (isCurrentPath) {
-      setIsOpen(true)
+      setIsOpen(true);
     } else {
-      setIsOpen(item.isActive || false)
+      setIsOpen(item.isActive || false);
     }
-  }, [item.title, isCurrentPath, item.isActive])
+  }, [item.title, isCurrentPath, item.isActive]);
 
   // Auto-open if navigating to a subitem
   useEffect(() => {
     if (isCurrentPath && !isOpen) {
-      setIsOpen(true)
-      setStoredState(item.title, true)
+      setIsOpen(true);
+      setStoredState(item.title, true);
     }
-  }, [pathname, isCurrentPath, isOpen, item.title])
+  }, [pathname, isCurrentPath, isOpen, item.title]);
 
   const handleToggle = (newState: boolean) => {
-    setIsOpen(newState)
-    setStoredState(item.title, newState)
-  }
+    setIsOpen(newState);
+    setStoredState(item.title, newState);
+  };
 
   return (
     <Collapsible
@@ -110,25 +115,28 @@ function NavMenuItem({ item }: { item: NavItem }) {
               <span>{item.title}</span>
             </Link>
           </SidebarMenuButton>
-          
+
           {/* Collapsible trigger for submenu */}
           {item.items && item.items.length > 0 && (
             <CollapsibleTrigger asChild>
-              <button 
+              <button
+                suppressHydrationWarning
                 className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
                 onClick={(e) => {
-                  e.preventDefault()
-                  handleToggle(!isOpen)
+                  e.preventDefault();
+                  handleToggle(!isOpen);
                 }}
                 aria-expanded={isOpen}
                 data-state={isOpen ? "open" : "closed"}
               >
-                <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                <ChevronRight
+                  className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}
+                />
               </button>
             </CollapsibleTrigger>
           )}
         </div>
-        
+
         {item.items && item.items.length > 0 && isMounted && (
           <CollapsibleContent>
             <SidebarMenuSub>
@@ -146,7 +154,7 @@ function NavMenuItem({ item }: { item: NavItem }) {
         )}
       </SidebarMenuItem>
     </Collapsible>
-  )
+  );
 }
 
 export function NavMain({ items }: { items: NavItem[] }) {
@@ -159,6 +167,5 @@ export function NavMain({ items }: { items: NavItem[] }) {
         ))}
       </SidebarMenu>
     </SidebarGroup>
-  )
+  );
 }
-
