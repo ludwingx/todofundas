@@ -1,11 +1,10 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/client"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 // PRIMERO: Modelos básicos que no dependen de otros
@@ -115,7 +114,8 @@ model Product {
   phoneModelId       String
   color              Color               @relation(fields: [colorId], references: [id])
   colorId            String
-  stock              Int
+  stock              Int                 @default(0)
+  stockDamaged       Int                 @default(0)
   minStock           Int                 @default(5)
   priceRetail        Float
   priceWholesale     Float
@@ -130,7 +130,7 @@ model Product {
   material           Material?           @relation(fields: [materialId], references: [id])
   materialId         String?
   sales              Sale[]
-  purchases          Purchase[]
+  purchaseItems      PurchaseItem[]
   movements          InventoryMovement[]
   createdAt          DateTime            @default(now())
   imageUrl           String?
@@ -156,6 +156,7 @@ model Sale {
   customerName    String?
   customerPhone   String?
   paymentMethod   String   @default("efectivo")
+  type            String   @default("minorista") // minorista, mayorista
   notes           String?
   clientId        String
   client          Client   @relation(fields: [clientId], references: [id])
@@ -164,25 +165,43 @@ model Sale {
 
   @@index([createdAt])
   @@index([productId])
+  @@index([type])
 }
 
 model Purchase {
-  id            String   @id @default(uuid())
-  productId     String
-  product       Product  @relation(fields: [productId], references: [id])
+  id            String         @id @default(uuid())
   supplierId    String
-  supplier      Supplier @relation(fields: [supplierId], references: [id])
-  quantity      Int
-  unitPrice     Float
-  totalPrice    Float
+  supplier      Supplier       @relation(fields: [supplierId], references: [id])
+  items         PurchaseItem[]
+  totalAmount   Float          @default(0)
+  status        String         @default("pendiente") // pendiente, recibido, parcial, cancelado
   invoiceNumber String?
   notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  receivedAt    DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  @@index([createdAt])
-  @@index([productId])
   @@index([supplierId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model PurchaseItem {
+  id              String   @id @default(uuid())
+  purchaseId      String
+  purchase        Purchase @relation(fields: [purchaseId], references: [id])
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id])
+  quantityOrdered Int
+  quantityGood    Int      @default(0)
+  quantityDamaged Int      @default(0)
+  unitCost        Float
+  totalCost       Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([purchaseId])
+  @@index([productId])
 }
 
 model InventoryMovement {

@@ -1,4 +1,4 @@
-import { Color } from '@prisma/client';
+import { Color } from '@/generated/client';
 
 export async function getColors(): Promise<Color[]> {
   try {
