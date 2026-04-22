@@ -82,7 +82,7 @@ export function ProfileClient({ user }: { user: { id: string, name: string, user
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="/dashboard">Market GS</BreadcrumbLink>
+                <BreadcrumbLink href="/dashboard">Market G/S</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Market GS - Gestión de Stock",
-  description: "Sistema de gestión de inventario para fundas y protectores de celular",
+  title: "Market G/S - Gestión de Stock",
+  description: "Sistema de gestión de inventario para fundas y protectores de celular Market G/S",
   keywords: ["fundas", "protectores", "celular", "inventario", "stock", "ventas"],
   authors: [{ name: "Ludwing Dev" }]
 };

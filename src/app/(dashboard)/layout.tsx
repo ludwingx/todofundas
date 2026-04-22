@@ -3,6 +3,7 @@ import { getSession } from "@/app/actions/auth";
 import { prisma as db } from "@/lib/prisma";
 import { AppSidebar } from "@/components/app-sidebar";
 import { NotificationBell } from "@/components/notification-bell";
+import { ThemeSwitch } from "@/components/theme-switch";
 import {
   SidebarInset,
   SidebarProvider,
@@ -40,7 +41,8 @@ export default async function DashboardLayout({
     <SidebarProvider>
       <AppSidebar user={userData} />
       <SidebarInset>
-        <div className="fixed top-3 right-4 z-50">
+        <div className="fixed top-3 right-4 z-50 flex items-center gap-2">
+          <ThemeSwitch />
           <NotificationBell />
         </div>
         {children}

@@ -10,7 +10,7 @@ import { toast } from "sonner"
 import { useActionState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Package } from "lucide-react"
+import { MarketLogo } from "@/components/brand-logo"
 
 export function LoginForm({
   className,
@@ -36,13 +36,13 @@ export function LoginForm({
           <form action={formAction} className="p-6 md:p-8">
             <div className="flex flex-col gap-8">
               <div className="flex flex-col items-center text-center">
-                <div className="flex items-center mb-4">
-                  <Package className="h-8 w-8 text-primary mr-2" />
-                  <h1 className="text-2xl font-bold">Market GS</h1>
-                </div>
+                <Link href="/" className="flex items-center mb-4 hover:opacity-80 transition-opacity">
+                  <MarketLogo className="h-10 w-10 mr-3" />
+                  <h1 className="text-2xl font-bold tracking-tight">Market G/S</h1>
+                </Link>
                 <h2 className="text-xl font-semibold mb-2">Bienvenido de nuevo</h2>
                 <p className="text-muted-foreground text-balance">
-                  Inicia sesión en tu cuenta de Market GS
+                  Inicia sesión en tu cuenta de Market G/S
                 </p>
               </div>
               

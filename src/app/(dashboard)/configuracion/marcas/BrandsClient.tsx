@@ -27,7 +27,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-type Brand = { id: string; name: string; status?: string };
+type Brand = { id: string; name: string; status?: string; logoUrl?: string | null };
 
 interface BrandsClientProps {
   showDeleted: boolean;
@@ -48,6 +48,7 @@ export default function BrandsClient({
   const [searchTerm, setSearchTerm] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editLogoUrl, setEditLogoUrl] = useState("");
   const [pageSize, setPageSize] = useState<number>(20);
   const [page, setPage] = useState<number>(1);
 
@@ -72,7 +73,8 @@ export default function BrandsClient({
 
   useEffect(() => {
     setPage(1);
-  }, [pageSize, Brands.length]);
+    load();
+  }, [showDeleted, reloadKey]);
 
   // Actualizar contador de eliminados
   useEffect(() => {
@@ -81,20 +83,16 @@ export default function BrandsClient({
     if (onDeletedCountChange) onDeletedCountChange(count);
   }, [Brands, onDeletedCountChange]);
 
-  useEffect(() => {
-    load();
-  }, [showDeleted, reloadKey]);
-
   async function load() {
     setLoading(true);
     try {
-      const url = `/api/brands`;
+      const url = `/api/brands?all=true`;
       const res = await fetch(url, { cache: "no-store" });
       const data = await res.json();
       if (Array.isArray(data)) setBrands(data);
       else
         toast.error("Error", {
-          description: data.error || "No se pudo cargar Brandes",
+          description: data.error || "No se pudo cargar Marcas",
         });
     } catch (e) {
       toast.error("Error de red", {
@@ -112,27 +110,30 @@ export default function BrandsClient({
   function startEdit(Brand: Brand) {
     setEditingId(Brand.id);
     setEditName(Brand.name);
+    setEditLogoUrl(Brand.logoUrl || "");
   }
 
   function cancelEdit() {
     setEditingId(null);
     setEditName("");
+    setEditLogoUrl("");
   }
 
   async function saveEdit(id: string) {
     const name = editName.trim();
+    const logoUrl = editLogoUrl.trim() || null;
     if (!name) return;
     try {
       const res = await fetch(`/api/brands/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, logoUrl }),
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success("Brand actualizado");
+        toast.success("Marca actualizada");
         setBrands((prev) =>
-          prev.map((m) => (m.id === id ? { ...m, name } : m))
+          prev.map((m) => (m.id === id ? { ...m, name, logoUrl } : m))
         );
         cancelEdit();
       } else {
@@ -148,7 +149,7 @@ export default function BrandsClient({
       const res = await fetch(`/api/brands/${id}`, { method: "DELETE" });
       const data = await res.json();
       if (res.ok) {
-        toast.success("Brand eliminado");
+        toast.success("Marca eliminada");
         await load();
       } else {
         toast.error("No se pudo eliminar", { description: data.error });
@@ -167,7 +168,7 @@ export default function BrandsClient({
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success("Brand restaurado");
+        toast.success("Marca restaurada");
         await load();
       } else {
         toast.error("No se pudo restaurar", { description: data.error });
@@ -182,10 +183,10 @@ export default function BrandsClient({
       <Card>
         <CardHeader className="pb-4">
           <div className="space-y-1">
-            <CardTitle>Lista de Brandes</CardTitle>
+            <CardTitle>Lista de Marcas</CardTitle>
             <CardDescription>
               {filtered.length}{" "}
-              {filtered.length === 1 ? "Brand" : "Brandes"} encontrados
+              {filtered.length === 1 ? "Marca" : "Marcas"} encontradas
             </CardDescription>
           </div>
         </CardHeader>
@@ -195,7 +196,7 @@ export default function BrandsClient({
               <div className="relative max-w-xs">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar Brandes..."
+                  placeholder="Buscar Marcas..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9 w-full"
@@ -209,9 +210,10 @@ export default function BrandsClient({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="font-semibold w-20 pl-6">#</TableHead>
+                  <TableHead className="font-semibold w-16 pl-6">#</TableHead>
+                  <TableHead className="font-semibold w-24">Logo</TableHead>
                   <TableHead className="font-semibold">
-                    Nombre del Brand
+                    Nombre de la Marca
                   </TableHead>
                   <TableHead className="font-semibold text-right w-48 pr-6">
                     Acciones
@@ -222,12 +224,12 @@ export default function BrandsClient({
                 {pageItems.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={3}
+                      colSpan={4}
                       className="text-center py-8 text-muted-foreground"
                     >
                       {loading
-                        ? "Cargando Brandes..."
-                        : "No se encontraron Brandes."}
+                        ? "Cargando Marcas..."
+                        : "No se encontraron Marcas."}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -243,16 +245,37 @@ export default function BrandsClient({
                           {rowNumber}
                         </TableCell>
                         <TableCell className="py-4">
+                          {Brand.logoUrl ? (
+                            <div className="h-10 w-10 relative rounded-md border bg-white overflow-hidden">
+                              <img 
+                                src={Brand.logoUrl} 
+                                alt={Brand.name} 
+                                className="h-full w-full object-contain"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-10 w-10 rounded-md border bg-muted flex items-center justify-center text-[10px] text-muted-foreground uppercase font-black">
+                              {Brand.name.substring(0, 2)}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-4">
                           {editingId === Brand.id ? (
-                            <Input
-                              value={editName}
-                              onChange={(e) => setEditName(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") saveEdit(Brand.id);
-                              }}
-                              className="w-full"
-                              autoFocus
-                            />
+                            <div className="flex flex-col gap-2">
+                              <Input
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                className="h-8"
+                                placeholder="Nombre"
+                                autoFocus
+                              />
+                              <Input
+                                value={editLogoUrl}
+                                onChange={(e) => setEditLogoUrl(e.target.value)}
+                                className="h-8 text-xs"
+                                placeholder="URL del Logo (opcional)"
+                              />
+                            </div>
                           ) : (
                             <span className="font-medium">{Brand.name}</span>
                           )}

@@ -14,13 +14,14 @@ import {
   FileText,
   Smartphone,
   Palette,
+  BookOpen,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { CompanyHeader } from "@/components/company-header";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { MarketLogo } from "@/components/brand-logo";
 import {
   Sidebar,
   SidebarContent,
@@ -28,7 +29,10 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { title } from "process";
+
+const CompanyLogo = ({ className }: { className?: string }) => (
+  <MarketLogo className={className} />
+);
 
 // Navigation data for marketgs system
 const data = {
@@ -38,8 +42,8 @@ const data = {
     avatar: "/avatars/default.jpg",
   },
   company: {
-    name: "Market GS",
-    logo: Smartphone,
+    name: "Market G/S",
+    logo: CompanyLogo,
     plan: "By: Ludwing",
   },
   navMain: [
@@ -143,6 +147,11 @@ const data = {
       icon: FileText,
       url: "/reportes",
     },
+    {
+      title: "Guía de Uso",
+      icon: BookOpen,
+      url: "/guia",
+    },
   ],
 };
 
@@ -179,7 +188,6 @@ export function AppSidebar({
         <NavMain items={filteredNavMain} />
       </SidebarContent>
       <SidebarFooter>
-        <ThemeToggle />
         <NavUser user={user || data.user} />
       </SidebarFooter>
       <SidebarRail />

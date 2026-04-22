@@ -9,8 +9,9 @@ import { createUserAction } from "@/app/actions/auth";
 import { toast } from "sonner";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { Package, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import Link from "next/link";
+import { MarketLogo } from "@/components/brand-logo";
 
 export function RegisterForm({
   className,
@@ -41,13 +42,13 @@ export function RegisterForm({
           <form action={formAction} className="p-6 md:p-8">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
-                <div className="flex items-center mb-4">
-                  <Package className="h-8 w-8 text-primary mr-2" />
-                  <h1 className="text-2xl font-bold">Market GS</h1>
-                </div>
+                <Link href="/" className="flex items-center mb-4 hover:opacity-80 transition-opacity">
+                  <MarketLogo className="h-10 w-10 mr-3" />
+                  <h1 className="text-2xl font-bold tracking-tight">Market G/S</h1>
+                </Link>
                 <h2 className="text-xl font-semibold">Crear cuenta</h2>
                 <p className="text-muted-foreground text-balance">
-                  Únete a Market GS y gestiona tu inventario
+                  Únete a Market G/S y gestiona tu inventario
                 </p>
               </div>
 
@@ -118,7 +119,7 @@ export function RegisterForm({
           <div className="bg-muted relative hidden md:block">
             <img
               src="/img/cellphoneLogin.png"
-              alt="Registro Market GS"
+              alt="Registro Market G/S"
               className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
             />
           </div>

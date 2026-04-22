@@ -1,4 +1,4 @@
-import { ModeToggle } from "@/components/mode-toggle";
+import { ThemeSwitch } from "@/components/theme-switch";
 
 export default function AuthLayout({
   children,
@@ -7,11 +7,11 @@ export default function AuthLayout({
 }) {
   return (
     <div className="relative flex min-h-svh flex-col items-center justify-center bg-muted/40 dark:bg-background p-4 md:p-8">
-      <div className="absolute top-4 right-4 md:top-8 md:right-8">
-        <ModeToggle />
-      </div>
-      <div className="w-full flex justify-center">
+      <div className="w-full flex flex-col items-center justify-center gap-6">
         {children}
+        <div className="mt-2">
+          <ThemeSwitch />
+        </div>
       </div>
     </div>
   );

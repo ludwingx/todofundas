@@ -251,10 +251,9 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                 <TableRow key={user.id} className="hover:bg-muted/30 transition-colors">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10 border shadow-sm">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} />
-                        <AvatarFallback className="bg-primary/5 text-primary font-bold">
-                          {user.name.substring(0, 2).toUpperCase()}
+                      <Avatar className="h-10 w-10 border shadow-sm rounded-full">
+                        <AvatarFallback className="bg-black text-white font-bold uppercase">
+                          {user.name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex flex-col">

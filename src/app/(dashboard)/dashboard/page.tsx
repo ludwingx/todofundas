@@ -79,7 +79,7 @@ export default async function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">Market GS</BreadcrumbLink>
+                  <BreadcrumbLink href="/dashboard">Market G/S</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
@@ -93,10 +93,10 @@ export default async function Page() {
           {/* Welcome Section */}
           <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
             <h2 className="text-2xl font-bold tracking-tight">
-              ¡Bienvenido {userData.name} 👋 a Market GS!
+              ¡Bienvenido {userData.name} 👋 a Market G/S!
             </h2>
             <p className="text-muted-foreground mt-2">
-              Sistema de gestión para fundas y protectores de pantalla.
+              Sistema de gestión para fundas y protectores de pantalla Market G/S.
             </p>
           </div>
 

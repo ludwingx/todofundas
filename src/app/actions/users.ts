@@ -151,3 +151,22 @@ export async function updateProfileAction(data: { name?: string, currentPassword
     return { success: false, error: error.message }
   }
 }
+
+export async function completeTutorialAction() {
+  const session = await getSession()
+  if (!session) {
+    return { success: false, error: 'No autorizado' }
+  }
+
+  try {
+    await db.user.update({
+      where: { id: session.userId as string },
+      data: { hasCompletedTutorial: true }
+    })
+
+    revalidatePath('/(dashboard)/guia')
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}

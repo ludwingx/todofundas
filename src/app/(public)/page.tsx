@@ -1,64 +1,127 @@
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Zap, BrainCircuit } from "lucide-react";
+import { 
+  ArrowRight, 
+  ShieldCheck, 
+  Zap, 
+  Smartphone,
+  Sparkles,
+  Camera
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MarketLogo } from "@/components/brand-logo";
 import { Badge } from "@/components/ui/badge";
 
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Hero Section */}
-      <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-black text-white relative overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_0%,transparent_100%)] pointer-events-none" />
-        <div className="container mx-auto px-4 md:px-6 relative z-10 flex flex-col items-center text-center">
-          <Badge variant="outline" className="text-white border-white/20 bg-white/5 backdrop-blur-sm mb-6 px-4 py-1.5 text-sm">
-            Market GS App 2026
-          </Badge>
-          <h1 className="text-5xl font-black tracking-tighter sm:text-6xl md:text-7xl lg:text-8xl bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-500 max-w-4xl mx-auto leading-tight md:leading-tight">
-            Control Absoluto<br/>Sobre Su Inventario
-          </h1>
-          <p className="mx-auto max-w-[700px] text-gray-400 text-lg md:text-xl font-light tracking-wide mt-6">
-            Plataforma web inteligente impulsada por algoritmos avanzados para la gestión integral de fundas y accesorios. Experimente el futuro del comercio minorista hoy.
-          </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/catalogo">
-              <Button className="bg-white text-black hover:bg-gray-200 h-14 px-8 rounded-full font-medium text-lg transition-all hover:scale-105 cursor-pointer">
-                Explorar Catálogo <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+      {/* Hero Section - Enfoque Boutique iPhone */}
+      <section className="relative w-full min-h-[75vh] flex items-center justify-center overflow-hidden border-b border-gray-100 dark:border-gray-900 py-16 md:py-24">
+        {/* Subtle Background blobs */}
+        <div className="absolute inset-0 z-0 opacity-20 dark:opacity-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] rounded-full bg-gray-200 blur-[100px] dark:bg-gray-800" />
+          <div className="absolute bottom-[10%] right-[10%] w-[40%] h-[40%] rounded-full bg-gray-100 blur-[100px] dark:bg-gray-700" />
+        </div>
+
+        <div className="container mx-auto px-4 md:px-6 relative z-10">
+          <div className="flex flex-col items-center text-center">
+            
+            <div className="flex flex-col items-center space-y-4 max-w-4xl">
+              {/* Título y Logo Ultra-Integrados */}
+              <div className="flex flex-col items-center justify-center gap-0">
+                <h1 className="text-7xl md:text-8xl lg:text-[10rem] font-black tracking-widest uppercase italic animate-in slide-in-from-top duration-1000 leading-[0.8]">
+                  Market
+                </h1>
+                <div className="animate-in zoom-in duration-1000 delay-300 -mt-2 md:-mt-4">
+                  <MarketLogo className="h-32 w-32 md:h-56 md:w-56 lg:h-72 lg:w-72 drop-shadow-2xl" />
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 animate-in fade-in duration-1000 delay-500">
+                <h2 className="text-xl md:text-2xl font-bold uppercase tracking-[0.3em] text-primary italic">Especialistas en iPhone</h2>
+                <p className="mx-auto max-w-[500px] text-gray-500 dark:text-gray-400 text-base md:text-lg font-medium tracking-tight leading-relaxed">
+                  Curaduría exclusiva de fundas premium diseñadas <br className="hidden sm:block" />
+                  para elevar y proteger tu iPhone al máximo nivel.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center pt-12 animate-in slide-in-from-bottom duration-1000 delay-700">
+              <Link href="/catalogo">
+                <Button className="bg-black dark:bg-white text-white dark:text-black hover:invert transition-all border-none h-16 px-16 rounded-none font-black text-xl uppercase tracking-[0.2em] shadow-2xl">
+                  Explorar Colección
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="w-full flex-1 py-16 md:py-24 lg:py-32 bg-background relative border-t flex items-center justify-center">
+      {/* Boutique Experience - Simplificado */}
+      <section className="w-full py-24 bg-white dark:bg-black">
         <div className="container mx-auto px-4 md:px-6">
-          <div className="mx-auto grid max-w-6xl items-start gap-12 py-12 lg:grid-cols-3">
-            <div className="flex flex-col items-center space-y-4 text-center group">
-              <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-primary/5 border border-primary/10 group-hover:bg-primary/10 transition-colors">
-                <BrainCircuit className="h-12 w-12 text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* Fila 1: Fundas */}
+            <div className="group relative aspect-[4/5] bg-gray-50 dark:bg-gray-950 p-10 flex flex-col justify-end overflow-hidden border border-transparent hover:border-black dark:hover:border-white transition-all duration-700">
+              <div className="absolute top-10 left-10 text-gray-200 dark:text-gray-800">
+                <Smartphone className="h-24 w-24" />
               </div>
-              <h3 className="text-2xl font-bold mt-4">Gestión Inteligente</h3>
-              <p className="text-muted-foreground leading-relaxed text-lg">
-                Sistema algorítmico que previene pérdidas silenciosas y optimiza el control de mercancía defectuosa en tiempo real.
+              <div className="relative z-10 space-y-2">
+                <h3 className="text-3xl font-black uppercase italic tracking-tighter">Estilo Puro</h3>
+                <p className="text-gray-500 text-sm leading-relaxed max-w-[200px]">Fundas con acabados de alta gama y texturas únicas.</p>
+                <div className="pt-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+                  Ver Fundas <ArrowRight className="h-3 w-3" />
+                </div>
+              </div>
+            </div>
+
+            {/* Fila 2: Proteccion */}
+            <div className="group relative aspect-[4/5] bg-gray-50 dark:bg-gray-950 p-10 flex flex-col justify-end overflow-hidden border border-transparent hover:border-black dark:hover:border-white transition-all duration-700">
+              <div className="absolute top-10 left-10 text-gray-200 dark:text-gray-800">
+                <ShieldCheck className="h-24 w-24" />
+              </div>
+              <div className="relative z-10 space-y-2">
+                <h3 className="text-3xl font-black uppercase italic tracking-tighter">Protección</h3>
+                <p className="text-gray-500 text-sm leading-relaxed max-w-[200px]">Resistencia certificada contra impactos y rayaduras.</p>
+                <div className="pt-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+                  Ver Micas <ArrowRight className="h-3 w-3" />
+                </div>
+              </div>
+            </div>
+
+            {/* Fila 3: Lanzamientos */}
+            <div className="group relative aspect-[4/5] bg-black text-white p-10 flex flex-col justify-end overflow-hidden border border-transparent hover:border-white transition-all duration-700">
+              <div className="absolute top-10 left-10 text-gray-800">
+                <Sparkles className="h-24 w-24" />
+              </div>
+              <div className="relative z-10 space-y-2">
+                <Badge variant="outline" className="text-white border-white/20 mb-2">Próximamente</Badge>
+                <h3 className="text-3xl font-black uppercase italic tracking-tighter">Colección Elite</h3>
+                <p className="text-gray-400 text-sm leading-relaxed max-w-[200px]">Accesorios seleccionados y ediciones limitadas.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Minimal Footer Info */}
+      <section className="w-full py-16 border-t border-gray-100 dark:border-gray-900 bg-white dark:bg-black">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+            <div className="space-y-2">
+              <h4 className="font-black uppercase tracking-[0.2em] text-sm italic">Market GS | Estilo de Vida</h4>
+              <p className="text-xs text-gray-500 max-w-[300px]">
+                Enfocados en la estética y protección de dispositivos Apple. Envíos nacionales certificados.
               </p>
             </div>
-            <div className="flex flex-col items-center space-y-4 text-center group">
-              <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-primary/5 border border-primary/10 group-hover:bg-primary/10 transition-colors">
-                <ShieldCheck className="h-12 w-12 text-primary" />
+            <div className="flex gap-8">
+              <div className="text-center">
+                <Camera className="h-5 w-5 mx-auto mb-2 text-gray-300" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Instagram</span>
               </div>
-              <h3 className="text-2xl font-bold mt-4">Precisión Financiera</h3>
-              <p className="text-muted-foreground leading-relaxed text-lg">
-                Wallet de compensación integrada y cálculo de rentabilidad neta. Cada centavo es rastreado y justificado con precisión.
-              </p>
-            </div>
-            <div className="flex flex-col items-center space-y-4 text-center group">
-              <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-primary/5 border border-primary/10 group-hover:bg-primary/10 transition-colors">
-                <Zap className="h-12 w-12 text-primary" />
+              <div className="text-center">
+                <Zap className="h-5 w-5 mx-auto mb-2 text-gray-300" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">WhatsApp</span>
               </div>
-              <h3 className="text-2xl font-bold mt-4">Arquitectura Escalable</h3>
-              <p className="text-muted-foreground leading-relaxed text-lg">
-                Desarrollado con tecnologías de vanguardia (Next.js 16) preparadas para integración profunda de IA.
-              </p>
             </div>
           </div>
         </div>
@@ -66,4 +129,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
