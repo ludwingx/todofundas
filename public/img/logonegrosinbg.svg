@@ -7,5 +7,5 @@
 	</defs>
 	<style>
 	</style>
-	<use id="Background" href="#img1" x="0" y="0" filter="url(#invert)"/>
+	<use id="Background" href="#img1" filter="url(#invert)" transform="matrix(1.631,0,0,1.631,-323,-323)"/>
 </svg>

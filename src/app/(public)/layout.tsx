@@ -20,8 +20,6 @@ export default function PublicLayout({
           
           <div className="hidden md:flex items-center gap-8 text-sm font-medium tracking-tight">
             <Link href="/catalogo" className="hover:text-gray-500 transition-colors uppercase">Catálogo</Link>
-            <Link href="#" className="hover:text-gray-500 transition-colors uppercase">Accesorios</Link>
-            <Link href="#" className="hover:text-gray-500 transition-colors uppercase">Sobre Nosotros</Link>
           </div>
 
           <div className="flex items-center gap-2">

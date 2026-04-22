@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from "@/lib/utils";
 
 interface LogoProps {
   className?: string;
@@ -11,18 +12,18 @@ interface LogoProps {
  */
 export function MarketLogo({ className = "h-10 w-10" }: LogoProps) {
   return (
-    <div className={`relative ${className}`}>
+    <div className={cn("relative flex items-center justify-center overflow-hidden", className)}>
       {/* Versión Negra para Modo Claro */}
       <img 
         src="/img/logonegrosinbg.svg" 
         alt="Market G/S Logo" 
-        className="h-full w-full object-contain dark:hidden block"
+        className="absolute inset-0 h-full w-full object-contain transition-opacity duration-300 dark:opacity-0 opacity-100"
       />
       {/* Versión Blanca para Modo Oscuro */}
       <img 
         src="/img/logoblancosinbg.svg" 
         alt="Market G/S Logo" 
-        className="h-full w-full object-contain hidden dark:block"
+        className="absolute inset-0 h-full w-full object-contain transition-opacity duration-300 opacity-0 dark:opacity-100"
       />
     </div>
   );

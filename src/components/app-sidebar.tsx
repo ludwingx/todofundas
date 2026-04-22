@@ -48,6 +48,11 @@ const data = {
   },
   navMain: [
     {
+      title: "Ver Tienda Pública",
+      url: "/",
+      icon: Smartphone,
+    },
+    {
       title: "Dashboard",
       url: "/dashboard",
       icon: BarChart3,
@@ -163,6 +168,12 @@ export function AppSidebar({
 }) {
   const isAdmin = user?.role === "admin" || user?.role === "admin2";
 
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const filteredNavMain = data.navMain.map(item => {
     if (item.title === "Configuración") {
       return {
@@ -178,6 +189,16 @@ export function AppSidebar({
     }
     return item;
   }).filter(Boolean) as typeof data.navMain;
+
+  if (!mounted) {
+    return (
+      <Sidebar collapsible="icon" {...props}>
+        <SidebarHeader />
+        <SidebarContent />
+        <SidebarFooter />
+      </Sidebar>
+    );
+  }
 
   return (
     <Sidebar collapsible="icon" {...props}>

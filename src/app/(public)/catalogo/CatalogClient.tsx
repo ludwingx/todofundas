@@ -161,18 +161,18 @@ export default function CatalogClient({
         </div>
 
         {filteredProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center border rounded-lg bg-muted/10 border-dashed">
-            <PackageX className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
-            <h3 className="text-xl font-semibold mb-2">No se encontraron productos</h3>
-            <p className="text-muted-foreground max-w-sm">
-              Intenta cambiar los filtros o los términos de búsqueda para encontrar lo que necesitas.
+          <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-gray-200 dark:border-gray-800">
+            <PackageX className="w-12 h-12 text-gray-300 dark:text-gray-700 mb-4" />
+            <h3 className="text-xl font-black uppercase tracking-tight mb-2">Sin resultados</h3>
+            <p className="text-gray-400 dark:text-gray-600 text-sm max-w-sm">
+              Intenta cambiar los filtros o los términos de búsqueda.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
-              <Card key={product.id} className="overflow-hidden group flex flex-col transition-all hover:shadow-lg border-muted/50 hover:border-primary/20">
-                <div className="relative aspect-square bg-muted/20 flex items-center justify-center overflow-hidden">
+              <Card key={product.id} className="overflow-hidden group flex flex-col transition-all hover:shadow-lg border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white rounded-none bg-white dark:bg-black">
+                <div className="relative aspect-square bg-gray-50 dark:bg-gray-950 flex items-center justify-center overflow-hidden">
                   {product.imageUrl ? (
                     <Image
                       src={product.imageUrl}
@@ -181,35 +181,35 @@ export default function CatalogClient({
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <Smartphone className="w-12 h-12 text-muted-foreground opacity-20" />
+                    <Smartphone className="w-12 h-12 text-gray-300 dark:text-gray-700" />
                   )}
                   {product.colorHex && (
-                    <div className="absolute top-3 left-3 flex items-center gap-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full border shadow-sm">
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-white/90 dark:bg-black/90 backdrop-blur-sm px-2 py-1 border border-gray-200 dark:border-gray-800">
                       <span 
-                        className="w-3 h-3 rounded-full border shadow-inner" 
+                        className="w-2.5 h-2.5 rounded-full border border-gray-300" 
                         style={{ backgroundColor: product.colorHex }} 
                       />
-                      <span className="text-[10px] font-medium leading-none uppercase">{product.colorName}</span>
+                      <span className="text-[9px] font-black leading-none uppercase tracking-wider">{product.colorName}</span>
                     </div>
                   )}
                 </div>
                 <CardContent className="p-4 flex-1">
                   <div className="mb-1 flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{product.brandName}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-600 font-black uppercase tracking-widest">{product.brandName}</p>
                     {product.stock <= 3 && (
-                      <Badge variant="destructive" className="text-[10px] px-1.5 py-0">¡Últimas!</Badge>
+                      <span className="text-[9px] font-black uppercase tracking-widest border border-black dark:border-white px-1.5 py-0.5">¡Últimas!</span>
                     )}
                   </div>
-                  <h3 className="font-bold text-base leading-tight mb-2 line-clamp-2">{product.name}</h3>
-                  <div className="text-lg font-black text-primary">Bs. {product.price.toFixed(2)}</div>
+                  <h3 className="font-bold text-sm leading-tight mb-2 line-clamp-2">{product.name}</h3>
+                  <div className="text-xl font-black">Bs. {product.price.toFixed(2)}</div>
                 </CardContent>
                 <CardFooter className="p-4 pt-0">
                   <Button 
-                    className="w-full gap-2 bg-[#25D366] hover:bg-[#1DA851] text-white shadow-md hover:shadow-lg transition-all" 
+                    className="w-full gap-2 bg-black dark:bg-white text-white dark:text-black hover:opacity-80 transition-all rounded-none font-black text-xs uppercase tracking-wider border-none shadow-none" 
                     onClick={() => handleWhatsApp(product)}
                   >
                     <MessageCircle className="w-4 h-4" />
-                    Consultar Disponible
+                    Consultar
                   </Button>
                 </CardFooter>
               </Card>
