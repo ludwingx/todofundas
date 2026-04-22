@@ -101,6 +101,8 @@ model User {
   isActive           Boolean             @default(true)
   lastLoginAt        DateTime?
   inventoryMovements InventoryMovement[]
+  walletTransactions WalletTransaction[]
+  notifications      Notification[]
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
@@ -158,8 +160,8 @@ model Sale {
   paymentMethod   String   @default("efectivo")
   type            String   @default("minorista") // minorista, mayorista
   notes           String?
-  clientId        String
-  client          Client   @relation(fields: [clientId], references: [id])
+  clientId        String?
+  client          Client?  @relation(fields: [clientId], references: [id])
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -220,3 +222,35 @@ model InventoryMovement {
   @@index([productId])
   @@index([createdAt])
 }
+
+// CUARTO: Modelos Financieros (Wallet)
+model WalletTransaction {
+  id            String   @id @default(uuid())
+  type          String // 'ingreso', 'egreso'
+  amount        Float
+  reason        String // ej: 'devolucion_proveedor', 'ajuste_danado'
+  referenceId   String? // ID de Purchase, PurchaseItem o Sale relacionado
+  referenceType String? // 'Purchase', 'Sale', etc.
+  notes         String?
+  userId        String // Usuario que registró la transacción
+  user          User     @relation(fields: [userId], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   @default("info") // info, warning, success, error
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+

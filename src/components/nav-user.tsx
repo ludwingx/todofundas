@@ -3,12 +3,10 @@
 import {
   ChevronsUpDown,
   LogOut,
-  Moon,
-  Sun,
+  Settings,
 } from "lucide-react"
 import { logoutAction } from "@/app/actions/auth"
 import { useRouter } from "next/navigation"
-import { useTheme } from "next-themes"
 
 import {
   Avatar,
@@ -40,7 +38,6 @@ export function NavUser({
     avatar: string
   }
 }) {
-  const { theme, setTheme } = useTheme()
   const { isMobile } = useSidebar()
   const router = useRouter()
   
@@ -95,19 +92,11 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-                {theme === 'dark' ? (
-                  <>
-                    <Sun />
-                    Modo Claro
-                  </>
-                ) : (
-                  <>
-                    <Moon />
-                    Modo Oscuro
-                  </>
-                )}
+              <DropdownMenuItem onClick={() => router.push('/ajustes')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Mi Perfil
               </DropdownMenuItem>
+
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>

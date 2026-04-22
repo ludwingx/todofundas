@@ -20,6 +20,7 @@ import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { CompanyHeader } from "@/components/company-header";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Sidebar,
   SidebarContent,
@@ -29,15 +30,15 @@ import {
 } from "@/components/ui/sidebar";
 import { title } from "process";
 
-// Navigation data for Fundamania system
+// Navigation data for marketgs system
 const data = {
   user: {
     name: "Usuario",
-    email: "usuario@fundamania.com",
+    email: "usuario@marketgs.com",
     avatar: "/avatars/default.jpg",
   },
   company: {
-    name: "FundaMania",
+    name: "Market GS",
     logo: Smartphone,
     plan: "By: Ludwing",
   },
@@ -51,91 +52,96 @@ const data = {
     {
       title: "Ventas",
       icon: ShoppingCart,
-      url: "/sales",
+      url: "/ventas",
       items: [
         {
           title: "Nueva Venta",
-          url: "/sales/new",
+          url: "/ventas/nueva",
         },
         {
           title: "Historial",
-          url: "/sales",
+          url: "/ventas",
         },
       ],
     },
     {
       title: "Compras",
       icon: ShoppingBag,
-      url: "/purchases",
+      url: "/compras",
       items: [
         {
           title: "Nueva Compra",
-          url: "/purchases/new",
+          url: "/compras/nueva",
         },
         {
           title: "Historial",
-          url: "/purchases",
-        },
-        {
-          title: "Facturas",
-          url: "/purchases/invoices",
+          url: "/compras",
         },
       ],
     },
     {
       title: "Inventario",
       icon: Package,
-      url: "/inventory",
+      url: "/inventario",
       items: [
         {
           title: "Productos",
-          url: "/inventory/products",
+          url: "/inventario/productos",
+        },
+        {
+          title: "Proveedores",
+          url: "/configuracion/proveedores",
         },
         {
           title: "Movimientos",
-          url: "/inventory/movements",
+          url: "/inventario/movements",
         },
       ],
     },
     {
       title: "Configuración",
       icon: Settings,
-      url: "/settings",
+      url: "/configuracion",
       items: [
         {
           title: "Marcas",
-          url: "/inventory/brands",
+          url: "/configuracion/marcas",
         },
         {
           title: "Modelos de Teléfono",
-          url: "/inventory/phone-models",
+          url: "/configuracion/modelos",
         },
         {
           title: "Colores",
-          url: "/inventory/colors",
+          url: "/configuracion/colores",
         },
         {
           title: "Tipos de Productos",
-          url: "/inventory/types",
+          url: "/configuracion/tipos",
         },
         {
           title: "Tipos de Materiales",
-          url: "/inventory/materials",
+          url: "/configuracion/materiales",
         },
         {
-          title: "Compatibilidad",
-          url: "/inventory/compatibility",
+          title: "Usuarios",
+          url: "/configuracion/usuarios",
         },
         {
-          title: "Proveedores",
-          url: "/purchases/providers",
+          title: "Ajustes",
+          url: "/configuracion/ajustes",
         },
       ],
     },
     {
+      title: "Wallet",
+      icon: History,
+      url: "/wallet",
+    },
+    {
       title: "Reportes",
       icon: FileText,
-      url: "/reports",
+      url: "/reportes",
     },
   ],
 };
@@ -144,17 +150,36 @@ export function AppSidebar({
   user,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  user?: { name: string; email: string; avatar: string };
+  user?: { name: string; email: string; avatar: string; role?: string };
 }) {
+  const isAdmin = user?.role === "admin" || user?.role === "admin2";
+
+  const filteredNavMain = data.navMain.map(item => {
+    if (item.title === "Configuración") {
+      return {
+        ...item,
+        items: item.items?.filter(subItem => 
+          subItem.title !== "Usuarios" || isAdmin
+        )
+      };
+    }
+    // Also hide Reportes if not admin
+    if (item.title === "Reportes" && !isAdmin) {
+      return null;
+    }
+    return item;
+  }).filter(Boolean) as typeof data.navMain;
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <CompanyHeader company={data.company} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={filteredNavMain} />
       </SidebarContent>
       <SidebarFooter>
+        <ThemeToggle />
         <NavUser user={user || data.user} />
       </SidebarFooter>
       <SidebarRail />

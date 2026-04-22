@@ -1,7 +1,6 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { supabase } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 
 export async function createProduct(_prevState: unknown, formData: FormData) {
@@ -63,25 +62,9 @@ export async function createProduct(_prevState: unknown, formData: FormData) {
     }
 
     let imageUrl: string | null = null;
-
-    if (imageFile && imageFile.size > 0) {
-      const fileExtension = imageFile.name.split(".").pop();
-      const fileName = `${Date.now()}.${fileExtension}`;
-      const { data: _uploadData, error: uploadError } = await supabase.storage
-        .from("product-images")
-        .upload(fileName, imageFile);
-
-      if (uploadError) {
-        console.error("Error uploading image:", uploadError);
-        return { error: "Error al subir la imagen." };
-      }
-
-      const { data: urlData } = supabase.storage
-        .from("product-images")
-        .getPublicUrl(fileName);
-
-      imageUrl = urlData.publicUrl;
-    }
+    
+    // Supabase has been removed. If image uploads are needed later, 
+    // a different storage provider should be implemented here.
 
     let productType = await prisma.productType.findFirst({
       where: { id: typeId },
@@ -241,5 +224,73 @@ export async function deleteProduct(productId: string) {
   } catch (error) {
     console.error("Error deleting product:", error);
     return { error: "Error al eliminar el producto" };
+  }
+}
+
+export async function reportDamagedProductAction(
+  productId: string,
+  quantity: number,
+  type: "absolute_loss" | "damaged_stock",
+  notes: string
+) {
+  try {
+    const { getSession } = await import("./auth")
+    const session = await getSession();
+    if (!session || !session.userId) {
+      return { error: "No autorizado" };
+    }
+
+    if (quantity <= 0) {
+      return { error: "La cantidad debe ser mayor a cero" };
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      return { error: "Producto no encontrado" };
+    }
+
+    if (product.stock < quantity) {
+      return { error: "No hay suficiente stock sano para descontar esta cantidad" };
+    }
+
+    // Calcular nuevos stocks
+    const newStock = product.stock - quantity;
+    const newStockDamaged =
+      type === "damaged_stock" ? (product.stockDamaged || 0) + quantity : product.stockDamaged;
+
+    // Transacción para asegurar la integridad
+    await prisma.$transaction(async (tx) => {
+      // 1. Actualizar stock del producto
+      await tx.product.update({
+        where: { id: productId },
+        data: {
+          stock: newStock,
+          stockDamaged: newStockDamaged,
+        },
+      });
+
+      // 2. Registrar movimiento de inventario (Salida del stock sano)
+      await tx.inventoryMovement.create({
+        data: {
+          productId,
+          type: "salida",
+          quantity: quantity,
+          reason: type === "absolute_loss" ? "perdida" : "dano",
+          notes: notes || (type === "absolute_loss" ? "Pérdida absoluta registrada" : "Movido a stock dañado"),
+          userId: session.userId as string,
+        },
+      });
+    });
+
+    revalidatePath("/(dashboard)/inventario");
+    revalidatePath("/(dashboard)/inventario/productos");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error reporting damaged product:", error);
+    return { error: "Error al registrar la pérdida/daño" };
   }
 }

@@ -57,10 +57,23 @@ export async function getDashboardMetrics() {
         }
       },
       _sum: {
-        totalPrice: true,
-        quantity: true
+        totalAmount: true
       },
       _count: true
+    })
+
+    // Obtener cantidad total de productos comprados en el mes
+    const monthlyPurchasesItems = await prisma.purchaseItem.aggregate({
+      where: {
+        purchase: {
+          createdAt: {
+            gte: currentMonth
+          }
+        }
+      },
+      _sum: {
+        quantityOrdered: true
+      }
     })
 
     return {
@@ -76,8 +89,8 @@ export async function getDashboardMetrics() {
         monthlyTransactions: monthlySales._count || 0
       },
       purchases: {
-        monthlySpent: monthlyPurchases._sum.totalPrice || 0,
-        monthlyQuantity: monthlyPurchases._sum.quantity || 0,
+        monthlySpent: monthlyPurchases._sum.totalAmount || 0,
+        monthlyQuantity: monthlyPurchasesItems._sum.quantityOrdered || 0,
         monthlyOrders: monthlyPurchases._count || 0
       }
     }

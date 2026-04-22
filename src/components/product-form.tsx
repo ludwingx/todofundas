@@ -29,6 +29,14 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Form,
   FormControl,
   FormDescription,
@@ -37,6 +45,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -107,6 +116,10 @@ export function ProductForm({
 }: ProductFormProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [localSuppliers, setLocalSuppliers] = useState(suppliers);
+  const [isAddingSupplier, setIsAddingSupplier] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState("");
+  const [isSupplierDialogOpen, setIsSupplierDialogOpen] = useState(false);
 
   const form = useForm<any>({
     resolver: zodResolver(productSchema) as any,
@@ -184,6 +197,31 @@ export function ProductForm({
       console.error("Error submitting form:", error);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleQuickAddSupplier = async () => {
+    if (!newSupplierName.trim()) return;
+    setIsAddingSupplier(true);
+    try {
+      const res = await fetch("/api/providers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newSupplierName }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setLocalSuppliers((prev) => [created, ...prev]);
+        form.setValue("supplierId", created.id);
+        setNewSupplierName("");
+        setIsSupplierDialogOpen(false);
+      } else {
+        alert("Error al crear el proveedor");
+      }
+    } catch (error) {
+      console.error("Error creating supplier:", error);
+    } finally {
+      setIsAddingSupplier(false);
     }
   };
 
@@ -480,7 +518,55 @@ export function ProductForm({
                     name="supplierId"
                     render={({ field }) => (
                       <FormItem className="md:col-span-1">
-                        <FormLabel className="capitalize">Proveedor</FormLabel>
+                        <div className="flex items-center justify-between">
+                          <FormLabel className="capitalize">Proveedor</FormLabel>
+                          <Dialog
+                            open={isSupplierDialogOpen}
+                            onOpenChange={setIsSupplierDialogOpen}
+                          >
+                            <DialogTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs text-primary"
+                              >
+                                <Plus className="h-3 w-3 mr-1" /> Nuevo
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[400px]">
+                              <DialogHeader>
+                                <DialogTitle>Añadir Proveedor</DialogTitle>
+                              </DialogHeader>
+                              <div className="py-4 space-y-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="sup-name">Nombre</Label>
+                                  <Input
+                                    id="sup-name"
+                                    value={newSupplierName}
+                                    onChange={(e) =>
+                                      setNewSupplierName(e.target.value)
+                                    }
+                                    placeholder="Nombre del proveedor"
+                                  />
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button
+                                  type="button"
+                                  onClick={handleQuickAddSupplier}
+                                  disabled={
+                                    isAddingSupplier || !newSupplierName.trim()
+                                  }
+                                >
+                                  {isAddingSupplier
+                                    ? "Añadiendo..."
+                                    : "Guardar"}
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                         <Select
                           onValueChange={(val) =>
                             field.onChange(val === "unselected" ? null : val)
@@ -497,7 +583,7 @@ export function ProductForm({
                             <SelectItem value="unselected">
                               Sin proveedor
                             </SelectItem>
-                            {suppliers.map((s) => (
+                            {localSuppliers.map((s) => (
                               <SelectItem key={s.id} value={s.id}>
                                 {s.name}
                               </SelectItem>

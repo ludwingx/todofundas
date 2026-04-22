@@ -1,5 +1,5 @@
 {
-  "name": "fundamania",
+  "name": "marketgs",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -37,11 +37,13 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "color-namer": "^1.4.0",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.4.1",
     "jose": "^6.0.12",
     "lucide-react": "^0.525.0",
     "next": "^16.2.2",
     "next-themes": "^0.4.6",
+    "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.68.0",

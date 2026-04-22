@@ -38,11 +38,11 @@ export function LoginForm({
               <div className="flex flex-col items-center text-center">
                 <div className="flex items-center mb-4">
                   <Package className="h-8 w-8 text-primary mr-2" />
-                  <h1 className="text-2xl font-bold">FundaMania</h1>
+                  <h1 className="text-2xl font-bold">Market GS</h1>
                 </div>
                 <h2 className="text-xl font-semibold mb-2">Bienvenido de nuevo</h2>
                 <p className="text-muted-foreground text-balance">
-                  Inicia sesión en tu cuenta de FundaMania
+                  Inicia sesión en tu cuenta de Market GS
                 </p>
               </div>
               
