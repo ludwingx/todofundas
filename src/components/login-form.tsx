@@ -30,7 +30,7 @@ export function LoginForm({
   }, null)
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn("flex flex-col gap-6 w-full max-w-sm md:max-w-4xl shadow-xl rounded-xl", className)} {...props}>
       <Card className="overflow-hidden p-0">
         <CardContent className="grid p-0 md:grid-cols-2">
           <form action={formAction} className="p-6 md:p-8">
