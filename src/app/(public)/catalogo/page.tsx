@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import CatalogClient from "./CatalogClient";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Catálogo de Productos | Market GS",
   description: "Encuentra las mejores fundas y protectores para tu celular.",
