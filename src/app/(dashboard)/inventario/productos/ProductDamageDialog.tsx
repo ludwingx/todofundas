@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,11 @@ interface ProductDamageDialogProps {
 export default function ProductDamageDialog({ product, trigger }: ProductDamageDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quantity, setQuantity] = useState<number>(1);
   const [type, setType] = useState<"absolute_loss" | "damaged_stock">("damaged_stock");
@@ -70,6 +75,8 @@ export default function ProductDamageDialog({ product, trigger }: ProductDamageD
 
     setIsSubmitting(false);
   };
+
+  if (!mounted) return <>{trigger}</>;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

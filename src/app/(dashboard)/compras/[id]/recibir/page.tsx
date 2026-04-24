@@ -16,12 +16,12 @@ import ReceivePurchaseClient from "./ReceivePurchaseClient";
 export default async function ReceivePurchasePage({
   params
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const purchaseId = params.id;
+  const { id: purchaseId } = await params;
 
   const purchase = await prisma.purchase.findUnique({
     where: { id: purchaseId },
@@ -35,7 +35,8 @@ export default async function ReceivePurchasePage({
               type: true,
               color: true
             }
-          }
+          },
+          productType: true
         }
       }
     }

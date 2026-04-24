@@ -12,7 +12,9 @@ type TopProduct = {
   phoneModel: {
     name: string;
   };
-  color: string | null;
+  color: {
+    name: string;
+  } | null;
   stock: number;
   totalSold: number;
   salesCount: number;
@@ -236,7 +238,7 @@ export default async function Page() {
                           ></div>
                           <span className="text-sm">
                             {product.phoneModel.name} {" "}
-                            {product.color ? `- ${product.color}` : ""}
+                            {product.color?.name ? `- ${product.color.name}` : ""}
                           </span>
                         </div>
                         <div className="text-right">

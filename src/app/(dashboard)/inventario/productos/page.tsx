@@ -15,15 +15,9 @@ import { Separator } from "@/components/ui/separator";
 import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import NewProductClient from "./NewProductClient";
 import ProductEditDialog from "./ProductEditDialog";
+import { RegisterProductDialog } from "./RegisterProductDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
@@ -111,7 +105,13 @@ export default async function ProductsPage() {
   ] = await Promise.all([
     prisma.productType.findMany({ select: { id: true, name: true } }),
     prisma.supplier.findMany({ select: { id: true, name: true } }),
-    prisma.phoneModel.findMany({ select: { id: true, name: true } }),
+    prisma.phoneModel.findMany({ 
+      select: { 
+        id: true, 
+        name: true,
+        brand: { select: { name: true } }
+      } 
+    }),
     prisma.color.findMany({
       where: { status: "active" },
       select: { id: true, name: true, hexCode: true },
@@ -183,29 +183,14 @@ export default async function ProductsPage() {
                   <span className="hidden sm:inline">Eliminados</span>
                 </Link>
               </Button>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    <span className="hidden sm:inline">Registrar Producto</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-2xl p-4">
-                  <DialogHeader className="pb-2">
-                    <DialogTitle className="text-lg font-semibold">
-                      Registrar Producto
-                    </DialogTitle>
-                  </DialogHeader>
-                  <NewProductClient
-                    productTypes={productTypes}
-                    suppliers={suppliers}
-                    phoneModels={phoneModels}
-                    colors={colors}
-                    materials={materials}
-                    compatibilities={compatibilities}
-                  />
-                </DialogContent>
-              </Dialog>
+              <RegisterProductDialog
+                productTypes={productTypes}
+                suppliers={suppliers}
+                phoneModels={phoneModels}
+                colors={colors}
+                materials={materials}
+                compatibilities={compatibilities}
+              />
             </div>
           </div>
 
@@ -248,6 +233,7 @@ export default async function ProductsPage() {
                               src={product.imageUrl}
                               alt={product.displayName}
                               fill
+                              sizes="40px"
                               className="rounded-md object-cover"
                             />
                           ) : (

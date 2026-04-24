@@ -20,19 +20,22 @@ type Product = {
   color: { name: string; hexCode: string } | null;
 };
 
+type ProductType = { id: string; name: string };
+
 type PurchaseItemRow = {
   id: string;
-  productId: string;
+  productTypeId: string;
   quantityOrdered: number;
   unitCost: number;
 };
 
 export default function NewPurchaseClient({
   suppliers,
-  products
+  productTypes
 }: {
   suppliers: Supplier[];
-  products: Product[];
+  productTypes: ProductType[];
+  products: any[];
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -45,7 +48,7 @@ export default function NewPurchaseClient({
   const addItem = () => {
     setItems([
       ...items,
-      { id: Date.now().toString(), productId: "", quantityOrdered: 1, unitCost: 0 }
+      { id: Date.now().toString(), productTypeId: "", quantityOrdered: 1, unitCost: 0 }
     ]);
   };
 
@@ -57,11 +60,6 @@ export default function NewPurchaseClient({
     setItems(items.map(item => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };
-        // Auto-fill cost if product changes
-        if (field === "productId") {
-          const prod = products.find(p => p.id === value);
-          if (prod) updatedItem.unitCost = prod.costPrice;
-        }
         return updatedItem;
       }
       return item;
@@ -76,8 +74,8 @@ export default function NewPurchaseClient({
       toast.error("Selecciona un proveedor");
       return;
     }
-    if (items.length === 0 || items.some(i => !i.productId || i.quantityOrdered <= 0)) {
-      toast.error("Agrega productos válidos al pedido");
+    if (items.length === 0 || items.some(i => !i.productTypeId || i.quantityOrdered <= 0)) {
+      toast.error("Agrega tipos de productos válidos al pedido");
       return;
     }
 
@@ -87,7 +85,7 @@ export default function NewPurchaseClient({
       invoiceNumber,
       notes,
       items: items.map(i => ({
-        productId: i.productId,
+        productTypeId: i.productTypeId,
         quantityOrdered: Number(i.quantityOrdered),
         unitCost: Number(i.unitCost)
       })),
@@ -175,17 +173,17 @@ export default function NewPurchaseClient({
                   <div key={item.id} className="flex gap-4 items-start p-4 border rounded-lg bg-muted/20">
                     <div className="flex-1 space-y-4">
                       <div className="space-y-2">
-                        <label className="text-xs font-medium">Producto</label>
+                        <label className="text-xs font-medium">Tipo de Producto</label>
                         <select
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                          value={item.productId}
-                          onChange={(e) => updateItem(item.id, "productId", e.target.value)}
+                          value={item.productTypeId}
+                          onChange={(e) => updateItem(item.id, "productTypeId", e.target.value)}
                           required
                         >
-                          <option value="">Seleccione producto...</option>
-                          {products.map(p => (
-                            <option key={p.id} value={p.id}>
-                              {p.type.name} {p.phoneModel.name} {p.color ? `(${p.color.name})` : ""} - Stock: {p.stock}
+                          <option value="">Seleccione tipo...</option>
+                          {productTypes.map(pt => (
+                            <option key={pt.id} value={pt.id}>
+                              {pt.name}
                             </option>
                           ))}
                         </select>

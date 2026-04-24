@@ -124,7 +124,7 @@ export default async function SalesPage() {
               <h3 className="tracking-tight text-sm font-medium">Ventas Hoy</h3>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </div>
-            <div className="text-2xl font-bold">${ventasHoy.toFixed(2)}</div>
+            <div className="text-2xl font-bold">Bs. {ventasHoy.toFixed(2)}</div>
           </div>
           
           <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
@@ -140,7 +140,7 @@ export default async function SalesPage() {
               <h3 className="tracking-tight text-sm font-medium">Ticket Promedio</h3>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </div>
-            <div className="text-2xl font-bold">${ticketPromedio.toFixed(2)}</div>
+            <div className="text-2xl font-bold">Bs. {ticketPromedio.toFixed(2)}</div>
           </div>
           
           <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
@@ -148,7 +148,7 @@ export default async function SalesPage() {
               <h3 className="tracking-tight text-sm font-medium">Ventas del Mes</h3>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </div>
-            <div className="text-2xl font-bold">${ventasMes.toFixed(2)}</div>
+            <div className="text-2xl font-bold">Bs. {ventasMes.toFixed(2)}</div>
           </div>
         </div>
 
@@ -176,7 +176,7 @@ export default async function SalesPage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium">${sale.totalPrice.toFixed(2)}</p>
+                  <p className="text-sm font-medium">Bs. {sale.totalPrice.toFixed(2)}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(sale.createdAt), { addSuffix: true, locale: es })}
                   </p>
@@ -218,7 +218,7 @@ export default async function SalesPage() {
                     <div className="w-2 h-2 bg-secondary rounded-full"></div>
                     <span className="text-sm capitalize">{method}</span>
                   </div>
-                  <span className="text-sm font-medium">${amount.toFixed(2)}</span>
+                  <span className="text-sm font-medium">Bs. {amount.toFixed(2)}</span>
                 </div>
               ))}
               {Object.keys(paymentMethods).length === 0 && (

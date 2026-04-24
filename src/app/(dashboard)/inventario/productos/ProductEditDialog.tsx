@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,9 +21,10 @@ type ProductData = {
   material?: { id: string; name: string } | null;
   compatibility?: { id: string; name: string; deviceType: string } | null;
   stock: number;
+  stockDamaged: number;
   minStock: number;
-  priceRetail: number;
-  priceWholesale: number;
+  priceRetail?: number | null;
+  priceWholesale?: number | null;
   costPrice: number;
   hasDiscount?: boolean;
   discountPercentage?: number | null;
@@ -50,10 +51,17 @@ export default function ProductEditDialog({
   trigger: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return <>{trigger}</>;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-2xl p-4">
+      <DialogContent className="sm:max-w-4xl p-6 rounded-[2rem] border-none shadow-2xl">
         <DialogHeader className="pb-2">
           <DialogTitle className="text-lg font-semibold">
             Editar Producto

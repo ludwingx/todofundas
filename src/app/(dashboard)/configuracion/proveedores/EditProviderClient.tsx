@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 type Provider = {
@@ -14,7 +15,8 @@ type Provider = {
   address?: string | null
 }
 
-export default function EditProviderClient({ provider, onUpdated }: { provider: Provider; onUpdated?: () => void }) {
+export default function EditProviderClient({ provider, onSuccess }: { provider: Provider; onSuccess?: () => void }) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [form, setForm] = useState<Provider>({ ...provider })
 
@@ -43,8 +45,8 @@ export default function EditProviderClient({ provider, onUpdated }: { provider: 
         })
         if (!res.ok) throw new Error("Error al actualizar")
         toast.success(`Proveedor "${form.name}" actualizado`)
-        onUpdated?.()
-        if (typeof window !== 'undefined') window.location.reload()
+        onSuccess?.()
+        router.refresh()
       } catch (e) {
         console.error(e)
         toast.error("No se pudo actualizar el proveedor")

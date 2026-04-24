@@ -15,13 +15,21 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateModelDialog } from "./CreateModelDialog";
 
-type PhoneModel = { id: string; name: string; status: string };
+type PhoneModel = { 
+  id: string; 
+  name: string; 
+  status: string;
+  brandId: string;
+  brand?: { name: string };
+};
 
 interface PhoneModelsClientProps {
   showDeleted: boolean;
   onModelCreated: () => void;
   reloadKey?: number;
 }
+
+type SortOption = "name-asc" | "name-desc" | "brand-asc" | "brand-desc";
 
 export default function PhoneModelsClient({ showDeleted, onModelCreated, reloadKey }: PhoneModelsClientProps) {
   const [models, setModels] = useState<PhoneModel[]>([]);
@@ -32,14 +40,45 @@ export default function PhoneModelsClient({ showDeleted, onModelCreated, reloadK
   const [editName, setEditName] = useState("");
   const [pageSize, setPageSize] = useState<number>(20);
   const [page, setPage] = useState<number>(1);
+  const [sortBy, setSortBy] = useState<SortOption>("name-asc");
+  const [selectedBrandId, setSelectedBrandId] = useState<string>("all");
+  const [availableBrands, setAvailableBrands] = useState<{id: string, name: string}[]>([]);
   
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    return models.filter(model => 
-      model.name.toLowerCase().includes(q) && 
-      (showDeleted ? model.status === 'deleted' : model.status !== 'deleted')
-    );
-  }, [models, searchTerm, showDeleted]);
+    let result = models.filter(model => {
+      const matchesSearch = model.name.toLowerCase().includes(q);
+      const matchesBrand = selectedBrandId === "all" || model.brandId === selectedBrandId;
+      const matchesStatus = showDeleted ? model.status === 'deleted' : model.status !== 'deleted';
+      return matchesSearch && matchesBrand && matchesStatus;
+    });
+
+    // Aplicar ordenamiento
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case "name-asc": return a.name.localeCompare(b.name);
+        case "name-desc": return b.name.localeCompare(a.name);
+        case "brand-asc": return (a.brand?.name || "").localeCompare(b.brand?.name || "");
+        case "brand-desc": return (b.brand?.name || "").localeCompare(a.brand?.name || "");
+        default: return 0;
+      }
+    });
+
+    return result;
+  }, [models, searchTerm, showDeleted, sortBy, selectedBrandId]);
+
+  useEffect(() => {
+    async function loadBrands() {
+      try {
+        const res = await fetch("/api/brands");
+        const data = await res.json();
+        if (Array.isArray(data)) setAvailableBrands(data);
+      } catch (e) {
+        console.error("Error loading brands:", e);
+      }
+    }
+    loadBrands();
+  }, []);
 
   const totalPages = useMemo(() => {
     return Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -232,44 +271,89 @@ export default function PhoneModelsClient({ showDeleted, onModelCreated, reloadK
     </CardDescription>
   </div>
 </CardHeader>
-{/* Buscador dentro de la Card, arriba de la tabla */}
-<div className="px-6 pt-4">
-  <div className="flex w-full">
-    <div className="flex-1 w-full sm:w-auto">
-      <div className="relative max-w-xs">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Buscar modelos..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9 w-full"
-        />
+{/* Buscador y Ordenamiento dentro de la Card, arriba de la tabla */}
+<div className="px-6 pt-4 pb-4">
+  <div className="flex flex-col sm:flex-row gap-4 w-full">
+    <div className="flex-1 max-w-xs relative">
+      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        placeholder="Buscar modelos..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="pl-9 w-full h-9"
+      />
+    </div>
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground whitespace-nowrap">Filtrar por Marca:</span>
+        <Select value={selectedBrandId} onValueChange={setSelectedBrandId}>
+          <SelectTrigger className="h-9 w-[150px]">
+            <SelectValue placeholder="Todas las marcas" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las marcas</SelectItem>
+            {availableBrands.map((b) => (
+              <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground whitespace-nowrap">Ordenar por:</span>
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+          <SelectTrigger className="h-9 w-[150px]">
+            <SelectValue placeholder="Seleccionar orden" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name-asc">Nombre (A-Z)</SelectItem>
+            <SelectItem value="name-desc">Nombre (Z-A)</SelectItem>
+            <SelectItem value="brand-asc">Marca (A-Z)</SelectItem>
+            <SelectItem value="brand-desc">Marca (Z-A)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {(searchTerm || selectedBrandId !== "all") && (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => {
+            setSearchTerm("");
+            setSelectedBrandId("all");
+          }}
+          className="h-9 gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-4 w-4" />
+          Limpiar filtros
+        </Button>
+      )}
     </div>
   </div>
 </div>
 <CardContent className="p-0">
-          <div className="rounded-lg border">
+          <div className="rounded-lg border-t">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="font-semibold w-20 pl-6">#</TableHead>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="font-semibold w-16 pl-6">#</TableHead>
                   <TableHead className="font-semibold">Nombre del Modelo</TableHead>
+                  <TableHead className="font-semibold">Marca</TableHead>
                   <TableHead className="font-semibold text-right w-48 pr-6">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pageItems.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={2} className="text-center py-8 text-muted-foreground">
-                      {loading ? "Cargando modelos..." : "No se encontraron modelos."}
-                    </TableCell>
-                  </TableRow>
+                   <TableRow>
+                    <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                       {loading ? "Cargando modelos..." : "No se encontraron modelos."}
+                     </TableCell>
+                   </TableRow>
                 ) : (
                   pageItems.map((model, index) => {
                     const rowNumber = (page - 1) * pageSize + index + 1;
                     return (
-                    <TableRow key={model.id} className="group hover:bg-muted/50">
+                    <TableRow key={model.id} className="group hover:bg-muted/50 transition-colors">
                       <TableCell className="py-4 text-muted-foreground pl-6">
                         {rowNumber}
                       </TableCell>
@@ -279,19 +363,24 @@ export default function PhoneModelsClient({ showDeleted, onModelCreated, reloadK
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') saveEdit(model.id); }}
-                            className="w-full"
+                            className="w-full h-9"
                             autoFocus
                           />
                         ) : (
                           <div className="flex items-center gap-3">
-                            <span className="font-medium">{model.name}</span>
+                            <span className="font-medium text-foreground">{model.name}</span>
                             {model.status === 'deleted' && (
-                              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                              <Badge variant="destructive" className="h-5 text-[10px]">
                                 Eliminado
-                              </span>
+                              </Badge>
                             )}
                           </div>
                         )}
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                          {model.brand?.name || "Sin marca"}
+                        </span>
                       </TableCell>
                       <TableCell className="py-4 pr-6">
                         <div className="flex justify-end gap-2">

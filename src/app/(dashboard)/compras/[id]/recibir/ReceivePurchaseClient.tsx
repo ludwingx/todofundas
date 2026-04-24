@@ -18,11 +18,14 @@ export default function ReceivePurchaseClient({ purchase }: { purchase: any }) {
     purchase.items.map((item: any) => ({
       id: item.id,
       productId: item.productId,
-      name: `${item.product.type.name} ${item.product.phoneModel.name} ${item.product.color ? item.product.color.name : ''}`.trim(),
+      productTypeId: item.productTypeId,
+      name: item.product 
+        ? `${item.product.type.name} ${item.product.phoneModel.name} ${item.product.color ? item.product.color.name : ''}`.trim()
+        : `${item.productType?.name || 'Tipo desconocido'} (Pendiente asignar producto)`,
       quantityOrdered: item.quantityOrdered,
-      quantityGood: item.quantityGood || item.quantityOrdered, // Default to assuming all came good
+      quantityGood: item.quantityGood || item.quantityOrdered,
       quantityDamaged: item.quantityDamaged || 0,
-      quantityLost: 0, // NEW field
+      quantityLost: 0,
     }))
   );
 

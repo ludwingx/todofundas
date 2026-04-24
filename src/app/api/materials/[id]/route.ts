@@ -4,10 +4,10 @@ import { prisma } from "@/lib/prisma";
 // PUT: Actualizar un material
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { name } = await req.json();
 
     if (!name || name.trim() === "") {
@@ -50,10 +50,10 @@ export async function PUT(
 // PATCH: Cambiar estado (activar/desactivar)
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { status } = await req.json();
 
     const updated = await prisma.material.update({
@@ -74,10 +74,10 @@ export async function PATCH(
 // DELETE: Soft delete (cambiar status a 'deleted')
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     await prisma.material.update({
       where: { id },

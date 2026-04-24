@@ -243,8 +243,8 @@ export function NewSaleClient({ availableProducts }: { availableProducts: Produc
                           <p className="text-sm text-muted-foreground">{product.model}</p>
                         </div>
                         <div className="text-right text-sm">
-                          <div><span className="font-semibold">${product.priceRetail}</span> min</div>
-                          <div className="text-muted-foreground">${product.priceWholesale} may</div>
+                          <div><span className="font-semibold">Bs. {product.priceRetail}</span> min</div>
+                          <div className="text-muted-foreground">Bs. {product.priceWholesale} may</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-2 pt-2 border-t">
@@ -329,7 +329,7 @@ export function NewSaleClient({ availableProducts }: { availableProducts: Produc
                               onChange={(e) => updateCartItemPrice(item.id, parseFloat(e.target.value) || 0)}
                             />
                           </TableCell>
-                          <TableCell className="font-medium">${(item.unitPrice * item.quantity).toFixed(2)}</TableCell>
+                          <TableCell className="font-medium">Bs. {(item.unitPrice * item.quantity).toFixed(2)}</TableCell>
                           <TableCell>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeCartItem(item.id)}>
                               <Trash2 className="h-4 w-4" />
@@ -389,7 +389,7 @@ export function NewSaleClient({ availableProducts }: { availableProducts: Produc
 
                   <div className="pt-2 border-t mt-2 flex justify-between font-bold text-lg">
                     <span>Total:</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>Bs. {subtotal.toFixed(2)}</span>
                   </div>
 
                   <Button 

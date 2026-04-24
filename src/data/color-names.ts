@@ -141,6 +141,9 @@ export const COLOR_NAMES_ES: Record<string, string> = {
   '#002200': 'Verde Pino',
   '#006633': 'Verde Esmeralda Oscuro',
   '#00512C': 'Verde Jade',
+  '#2E4715': 'Verde Musgo Oscuro',
+  '#4B5320': 'Verde Oliva Ejército',
+  '#3B444B': 'Gris Carbón Verdoso',
   '#00FF80': 'Verde Menta',
   '#00FF99': 'Verde Agua',
   '#00CC66': 'Verde Esmeralda',
@@ -206,11 +209,6 @@ export const COLOR_NAMES_ES: Record<string, string> = {
   '#006666': 'Turquesa Profundo',
   '#004D4D': 'Verde Azulado Oscuro',
   '#00CCCC': 'Cian Brillante',
-  '#33CCCC': 'Turquesa Claro',
-  '#66CCCC': 'Turquesa Pastel',
-  '#99CCCC': 'Turquesa Grisáceo',
-  '#00AAAA': 'Verde Azulado Medio',
-  '#008888': 'Cian Medio',
   '#20B2AA': 'Verde Mar Claro',
 
   // MORADOS Y VIOLETAS
@@ -251,6 +249,9 @@ export const COLOR_NAMES_ES: Record<string, string> = {
   '#5C4033': 'Marrón Caoba',
   '#6F4E37': 'Marrón Café Claro',
   '#8B7355': 'Marrón Bronce',
+  '#4B3D2A': 'Marrón Tabaco',
+  '#3C341F': 'Verde Oliva Seco',
+  '#354E1B': 'Verde Bosque Profundo',
 
   // GRISES Y NEUTROS
   '#808080': 'Gris',
@@ -301,9 +302,6 @@ export const COLOR_NAMES_ES: Record<string, string> = {
   '#00F5FF': 'Cian Neón',
 };
 
-// Total: ~300+ colores únicos organizados por familia
-// Se han eliminado todos los duplicados para resolver el error TypeScript
-
 export function hexToRgb(hex: string): {r: number, g: number, b: number} | null {
   hex = hex.replace(/^#/, '')
   
@@ -329,25 +327,23 @@ export function colorDistance(rgb1: {r: number, g: number, b: number}, rgb2: {r:
   )
 }
 
-// Importar color-namer dinámicamente para evitar problemas de SSR
-const getNamer = async () => {
-  if (typeof window === 'undefined') return null;
-  const namerModule = await import('color-namer');
-  // Acceder a la función correctamente - puede ser namerModule.default o namerModule directamente
-  return namerModule.default || namerModule;
-};
-
+/**
+ * Función principal para obtener un nombre descriptivo único.
+ * Intenta coincidencia exacta, luego cercana, y finalmente genera uno dinámico.
+ */
 export async function getColorName(hex: string): Promise<string> {
   const upperHex = hex.toUpperCase()
   
+  // 1. Coincidencia exacta
   if (COLOR_NAMES_ES[upperHex]) {
     return COLOR_NAMES_ES[upperHex]
   }
   
   try {
     const rgb = hexToRgb(upperHex)
-    if (!rgb) return await getColorFromNamer(hex)
+    if (!rgb) return 'Color personalizado'
     
+    // 2. Coincidencia muy cercana (umbral bajo para evitar errores de categoría)
     let closestColor = ''
     let minDistance = Infinity
     
@@ -362,91 +358,94 @@ export async function getColorName(hex: string): Promise<string> {
       }
     }
     
-    if (minDistance < 50) {
-      return closestColor;
+    if (minDistance < 15) {
+      return closestColor
     }
-    
-    return await getColorFromNamer(hex);
+
+    // 3. Generación dinámica de nombre basado en HSL profundo
+    return generateDynamicName(rgb.r, rgb.g, rgb.b)
     
   } catch (error) {
-    console.error('Error al obtener el nombre del color:', error)
-    return await getColorFromNamer(hex)
+    console.error('Error al generar nombre de color:', error)
+    return 'Color personalizado'
   }
 }
 
-// Función para determinar el tono de un color (claro/oscuro)
-function getColorTone(rgb: {r: number, g: number, b: number}): 'light' | 'dark' {
-  const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-  return luminance > 0.5 ? 'light' : 'dark';
-}
+function generateDynamicName(r: number, g: number, b: number): string {
+  // Convertir RGB a HSL
+  const rNorm = r / 255, gNorm = g / 255, bNorm = b / 255
+  const max = Math.max(rNorm, gNorm, bNorm), min = Math.min(rNorm, gNorm, bNorm)
+  let h = 0, s = 0, l = (max + min) / 2
 
-// Función auxiliar para obtener el nombre del color usando color-namer
-async function getColorFromNamer(hex: string): Promise<string> {
-  try {
-    const rgb = hexToRgb(hex);
-    if (!rgb) return 'Color personalizado';
-    
-    const namerModule = await getNamer();
-    if (!namerModule) return 'Color personalizado';
-    
-    // Llamar correctamente a la función namer
-    const names = namerModule(hex);
-    const tone = getColorTone(rgb);
-    
-    const getBestName = (): string => {
-      if (names.es?.[0]?.name) {
-        return names.es[0].name;
-      }
-      
-      if (names.basic?.length > 0) {
-        const baseName = names.basic[0].name;
-        const tonePrefix = tone === 'dark' ? 'Oscuro ' : 'Claro ';
-        
-        if ((tone === 'dark' && rgb.r + rgb.g + rgb.b < 100) || 
-            (tone === 'light' && rgb.r + rgb.g + rgb.b > 700)) {
-          return tonePrefix + baseName;
-        }
-        
-        const max = Math.max(rgb.r, rgb.g, rgb.b);
-        const min = Math.min(rgb.r, rgb.g, rgb.b);
-        const saturation = (max - min) / max || 0;
-        
-        if (saturation < 0.2) {
-          return (tone === 'dark' ? 'Grisáceo ' : 'Apagado ') + baseName;
-        }
-        
-        return baseName;
-      }
-      
-      return '';
-    };
-    
-    const bestName = getBestName();
-    
-    if (!bestName) {
-      const {r, g, b} = rgb;
-      const hue = Math.round(Math.atan2(Math.sqrt(3) * (g - b), 2 * r - g - b) * 180 / Math.PI);
-      
-      let colorFamily = '';
-      if (hue < 15 || hue >= 345) colorFamily = 'Rojo';
-      else if (hue < 45) colorFamily = 'Naranja';
-      else if (hue < 75) colorFamily = 'Amarillo';
-      else if (hue < 150) colorFamily = 'Verde';
-      else if (hue < 195) colorFamily = 'Cian';
-      else if (hue < 255) colorFamily = 'Azul';
-      else if (hue < 285) colorFamily = 'Violeta';
-      else colorFamily = 'Magenta';
-      
-      const toneName = tone === 'dark' ? 'Oscuro' : 'Claro';
-      const intensity = Math.round((r + g + b) / 7.65);
-      
-      return `${toneName} ${colorFamily} ${intensity}%`;
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    switch (max) {
+      case rNorm: h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0); break
+      case gNorm: h = (bNorm - rNorm) / d + 2; break
+      case bNorm: h = (rNorm - gNorm) / d + 4; break
     }
-    
-    return bestName.charAt(0).toUpperCase() + bestName.slice(1);
-    
-  } catch (error) {
-    console.error('Error al obtener nombre con color-namer:', error);
-    return 'Color personalizado';
+    h /= 6
   }
+
+  const hue = h * 360
+  const sat = s * 100
+  const lum = l * 100
+
+  // Casos base de luminosidad extrema
+  if (lum > 97) return 'Blanco Puro'
+  if (lum < 5) return 'Negro Absoluto'
+
+  // Determinar Familia Cromática basada en Hue (con precisión de 15-20 grados)
+  let family = ''
+  if (hue < 15 || hue >= 345) family = 'Rojo'
+  else if (hue < 30) family = 'Rojo Naranja'
+  else if (hue < 45) family = 'Naranja'
+  else if (hue < 60) family = 'Ámbar'
+  else if (hue < 75) family = 'Amarillo'
+  else if (hue < 90) family = 'Lima'
+  else if (hue < 150) family = 'Verde'
+  else if (hue < 170) family = 'Verde Turquesa'
+  else if (hue < 190) family = 'Cian'
+  else if (hue < 210) family = 'Azul Cielo'
+  else if (hue < 255) family = 'Azul'
+  else if (hue < 285) family = 'Violeta'
+  else if (hue < 315) family = 'Magenta'
+  else family = 'Rosa'
+
+  // Ajustes por baja saturación (Neutros/Grisáceos)
+  if (sat < 10) {
+    if (lum > 80) return 'Gris Pálido'
+    if (lum > 60) return 'Gris Claro'
+    if (lum > 40) return 'Gris Medio'
+    if (lum > 20) return 'Gris Oscuro'
+    return 'Gris Carbón'
+  }
+
+  // Modificador de Saturación (Intensidad)
+  let modifierS = ''
+  if (sat < 30) modifierS = 'Grisáceo'
+  else if (sat < 60) modifierS = 'Apagado'
+  else if (sat > 90) modifierS = 'Vibrante'
+  else modifierS = 'Intenso'
+
+  // Modificador de Luminosidad (Tono)
+  let modifierL = ''
+  if (lum < 20) modifierL = 'Muy Oscuro'
+  else if (lum < 40) modifierL = 'Oscuro'
+  else if (lum > 85) modifierL = 'Muy Claro'
+  else if (lum > 65) modifierL = 'Claro'
+
+  // Especializaciones de familia (Marrón, Oliva, Marino)
+  if (family === 'Verde' && hue < 100 && sat < 50) family = 'Oliva'
+  if (family === 'Naranja' && lum < 45) family = 'Marrón'
+  if (family === 'Rojo' && lum < 30) family = 'Vino'
+  if (family === 'Azul' && lum < 25) family = 'Marino'
+
+  // Construcción del nombre final
+  const parts = [family]
+  if (modifierL) parts.push(modifierL)
+  if (modifierS !== 'Intenso' || parts.length === 1) parts.push(modifierS)
+
+  return parts.join(' ')
 }

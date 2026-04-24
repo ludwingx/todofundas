@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, Palette, Sparkles } from "lucide-react"
 import { getColorName } from "@/data/color-names"
+import { cn } from "@/lib/utils"
 
 interface ColorPickerModalProps {
   open: boolean
@@ -31,6 +32,7 @@ export function ColorPickerModal({
   const [name, setName] = useState("")
   const [hexCode, setHexCode] = useState("#000000")
   const [displayHex, setDisplayHex] = useState("#000000")
+  const [isTransparent, setIsTransparent] = useState(false)
   const [isNaming, setIsNaming] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
@@ -38,10 +40,13 @@ export function ColorPickerModal({
   useEffect(() => {
     if (editColor) {
       setName(editColor.name)
-      setHexCode(editColor.hexCode)
-      setDisplayHex(editColor.hexCode)
+      const isTrans = editColor.hexCode.toLowerCase() === 'transparent'
+      setIsTransparent(isTrans)
+      setHexCode(isTrans ? "#000000" : editColor.hexCode)
+      setDisplayHex(isTrans ? "transparent" : editColor.hexCode)
     } else {
       setName("")
+      setIsTransparent(false)
       setHexCode("#000000")
       setDisplayHex("#000000")
     }
@@ -66,7 +71,7 @@ export function ColorPickerModal({
   }
 
   const suggestColorName = async (hex: string) => {
-    if (!hex || hex.length < 4) return
+    if (!hex || hex.length < 4 || isNaming) return
     
     setIsNaming(true)
     try {
@@ -95,8 +100,10 @@ export function ColorPickerModal({
       return
     }
     
-    // Validate hex code
-    if (!hexCode || !hexCode.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)) {
+    // Validate hex code if not transparent
+    const finalHex = isTransparent ? 'transparent' : hexCode.toLowerCase()
+    
+    if (!isTransparent && (!hexCode || !hexCode.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/))) {
       setError("Por favor ingresa un código de color hexadecimal válido")
       return
     }
@@ -104,11 +111,12 @@ export function ColorPickerModal({
     // Save the color
     onSave({
       name,
-      hexCode: hexCode.toLowerCase()
+      hexCode: finalHex
     })
     
     // Reset form
     setName("")
+    setIsTransparent(false)
     setHexCode("#000000")
     setDisplayHex("#000000")
     setError("")
@@ -124,7 +132,29 @@ export function ColorPickerModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[450px]">
-        <DialogHeader>
+        <DialogHeader className="relative">
+          <div className="absolute right-0 top-0 flex items-center gap-1.5 opacity-20 hover:opacity-100 transition-opacity">
+            <input
+              type="checkbox"
+              id="transparent"
+              checked={isTransparent}
+              onChange={(e) => {
+                const checked = e.target.checked
+                setIsTransparent(checked)
+                if (checked) {
+                  setName("Transparente")
+                  setDisplayHex("transparent")
+                } else {
+                  if (name === "Transparente") setName("")
+                  setDisplayHex(hexCode)
+                }
+              }}
+              className="h-3 w-3 rounded-sm border-muted-foreground/30 text-primary cursor-pointer"
+            />
+            <Label htmlFor="transparent" className="text-[9px] font-bold cursor-pointer select-none text-muted-foreground">
+              TRASP.
+            </Label>
+          </div>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Palette className="h-5 w-5" />
             {editColor ? "Editar Color" : "Crear Nuevo Color"}
@@ -166,13 +196,14 @@ export function ColorPickerModal({
               </div>
           </div>
 
+
           {/* Selector de Color */}
           <div className="space-y-4">
             <Label className="text-sm font-medium">
               Seleccionar Color
             </Label>
             
-            <div className="p-4 rounded-lg border bg-muted/50 space-y-4">
+            <div className={cn("p-4 rounded-lg border bg-muted/50 space-y-4 transition-opacity", isTransparent && "opacity-50 pointer-events-none")}>
               {/* Selector de color integrado en el cuadro de vista previa */}
               <div className="flex flex-col items-center gap-4">
                 <div className="text-center">
@@ -184,12 +215,24 @@ export function ColorPickerModal({
                       id="colorPicker"
                       type="color"
                       value={hexCode}
-                      onChange={(e) => setHexCode(e.target.value.toUpperCase())}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase()
+                        setHexCode(val)
+                        setDisplayHex(val)
+                        // Sugerir nombre automáticamente al cambiar el color visualmente
+                        suggestColorName(val)
+                      }}
+                      disabled={isTransparent}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                     />
                     <div 
-                      className="w-32 h-32 rounded-lg border-4 border-white shadow-lg cursor-pointer transition-all hover:scale-105 hover:shadow-xl"
-                      style={{ 
+                      className={cn(
+                        "w-32 h-32 rounded-lg border-4 border-white shadow-lg cursor-pointer transition-all hover:scale-105 hover:shadow-xl",
+                        isTransparent && "bg-transparent border-dashed border-muted-foreground/40"
+                      )}
+                      style={isTransparent ? {
+                        background: 'repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50% / 12px 12px'
+                      } : { 
                         backgroundColor: hexCode
                       }}
                     />
@@ -207,15 +250,21 @@ export function ColorPickerModal({
                     id="hex"
                     value={displayHex}
                     onChange={(e) => handleHexChange(e.target.value)}
+                    disabled={isTransparent}
                     placeholder="#RRGGBB"
                     className="font-mono"
                   />
                   <div 
-                    className="w-8 h-8 rounded-md border"
-                    style={{ 
+                    className={cn(
+                      "w-8 h-8 rounded-md border",
+                      isTransparent && "bg-transparent border-dashed"
+                    )}
+                    style={isTransparent ? {
+                      background: 'repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50% / 8px 8px'
+                    } : { 
                       backgroundColor: hexCode
                     }}
-                    title={hexCode}
+                    title={isTransparent ? "Transparente" : hexCode}
                   />
                 </div>
               </div>

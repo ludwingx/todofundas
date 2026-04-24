@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 
-export default function NewProviderClient({ onCreated }: { onCreated?: () => void }) {
+export default function NewProviderClient({ onSuccess }: { onSuccess?: () => void }) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [form, setForm] = useState({ name: "", contact: "", email: "", phone: "", address: "" })
 
@@ -28,8 +30,8 @@ export default function NewProviderClient({ onCreated }: { onCreated?: () => voi
         })
         if (!res.ok) throw new Error("Error al crear proveedor")
         toast.success(`Proveedor "${form.name}" creado`)
-        onCreated?.()
-        if (typeof window !== 'undefined') window.location.reload()
+        onSuccess?.()
+        router.refresh()
       } catch (e) {
         console.error(e)
         toast.error("No se pudo crear el proveedor")

@@ -4,9 +4,9 @@ import { prisma } from '@/lib/prisma'
 // GET - Obtener un color por ID
 export async function GET(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
   try {
     const color = await prisma.color.findUnique({
       where: { id }
@@ -32,9 +32,9 @@ export async function GET(
 // PUT - Actualizar un color
 export async function PUT(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
   try {
     const body = await request.json()
     const { name, hexCode } = body
@@ -48,9 +48,9 @@ export async function PUT(
 
     // Validar formato hexadecimal
     const hexRegex = /^#[0-9A-Fa-f]{6}$/
-    if (!hexRegex.test(hexCode)) {
+    if (hexCode !== 'transparent' && !hexRegex.test(hexCode)) {
       return NextResponse.json(
-        { error: 'Código hexadecimal inválido. Debe ser formato #RRGGBB' },
+        { error: 'Código hexadecimal inválido. Debe ser formato #RRGGBB o "transparent"' },
         { status: 400 }
       )
     }
@@ -110,9 +110,9 @@ export async function PUT(
 // DELETE - Eliminar un color (soft delete)
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
   try {
     const color = await prisma.color.findUnique({
       where: { id }

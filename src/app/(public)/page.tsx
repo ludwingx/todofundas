@@ -10,7 +10,8 @@ import {
   EmailIcon,
 } from "@/components/social-icons";
 
-const WA_NUMBER = "your-number"; // reemplaza con número real
+const WA_NUMBER = "59170000000"; 
+const WA_LINK = `https://wa.me/${WA_NUMBER}`;
 
 const testimonials = [
   { quote: "No sabía que una funda cambiaba tanto el look de mi teléfono.", name: "Valentina R." },
@@ -38,7 +39,7 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen">
 
       {/* ─── HERO ─── */}
-      <section className="relative w-full min-h-[90vh] flex items-center justify-center overflow-hidden bg-white dark:bg-black border-b border-gray-100 dark:border-white/10">
+      <section className="relative w-full min-h-[85vh] flex items-center justify-center overflow-hidden bg-white dark:bg-black border-b border-gray-100 dark:border-white/10">
         {/* Blob sutil */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-30 dark:opacity-10">
           <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] rounded-full bg-gray-200 blur-[120px] dark:bg-[#222]" />
@@ -50,26 +51,21 @@ export default function LandingPage() {
 
             {/* Logo integrado */}
             <div className="flex flex-col items-center gap-0 animate-in slide-in-from-top duration-700">
-              <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-widest uppercase italic leading-[0.85]">
+              <h1 className="text-8xl md:text-[12rem] lg:text-[16rem] font-black tracking-tighter uppercase italic leading-[0.7]">
                 Market
               </h1>
-              <div className="-mt-2 md:-mt-4 animate-in zoom-in duration-700 delay-200">
-                <MarketLogo className="h-28 w-28 md:h-52 md:w-52 lg:h-64 lg:w-64 drop-shadow-2xl" />
+              <div className="-mt-6 md:-mt-12 animate-in zoom-in duration-700 delay-200">
+                <MarketLogo className="h-32 w-32 md:h-64 md:w-64 lg:h-80 lg:w-80 drop-shadow-2xl" />
               </div>
             </div>
 
             {/* Copy emocional */}
-            <div className="space-y-4 animate-in fade-in duration-700 delay-400">
-              <p className="text-2xl md:text-4xl font-black leading-tight tracking-tight">
-                Tu iPhone habla de ti…
-                <br />
-                <span className="italic">asegúrate de que diga lo correcto.</span>
+            <div className="space-y-2 animate-in fade-in duration-700 delay-400">
+              <p className="text-3xl md:text-6xl font-black leading-none tracking-tighter uppercase italic">
+                Tu iPhone habla de vos…
               </p>
-              <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base max-w-[480px] mx-auto leading-relaxed">
-                Fundas que no solo protegen —{" "}
-                <strong className="text-black dark:text-white">
-                  definen tu estilo, tu presencia y cómo te perciben.
-                </strong>
+              <p className="text-xl md:text-3xl font-black opacity-30 italic">
+                asegurate de que diga lo correcto.
               </p>
             </div>
 
@@ -82,7 +78,7 @@ export default function LandingPage() {
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center gap-3 animate-in slide-in-from-bottom duration-700 delay-600">
-              <Link href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hola! Quiero ver los modelos disponibles")}`} target="_blank">
+              <Link href={WA_LINK} target="_blank">
                 <Button className="bg-black hover:bg-black/80 text-white hover:text-white dark:bg-white dark:hover:bg-white/80 dark:text-black dark:hover:text-black transition-all h-12 sm:h-14 px-8 sm:px-12 rounded-none font-black text-xs sm:text-sm uppercase tracking-[0.2em] border-none shadow-xl w-56 sm:w-auto">
                   Ver por WhatsApp
                 </Button>
@@ -98,63 +94,52 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── PROBLEMA ─── */}
-      <section className="w-full py-20 bg-white dark:bg-black border-b border-gray-100 dark:border-white/10">
+      {/* ─── CONTRASTE (PROBLEMA + AGITACIÓN) ─── */}
+      <section className="w-full py-20 bg-black text-white border-b border-white/10">
         <div className="container mx-auto px-4 md:px-6 max-w-3xl text-center">
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 mb-6">El problema</p>
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-white/40 mb-6 italic">La realidad</p>
           <h2 className="text-3xl md:text-5xl font-black leading-tight mb-8">
-            La mayoría usa fundas genéricas…
+            Tu iPhone es una pieza de diseño...
             <br />
-            <span className="italic text-gray-400 dark:text-gray-500">que hacen que todos los iPhone se vean iguales.</span>
+            <span className="italic text-white/50">pero tu funda lo hace ver común.</span>
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-10">
+          <p className="text-white/40 text-[10px] md:text-xs max-w-[360px] mx-auto leading-relaxed mb-12 uppercase tracking-[0.2em] font-bold">
+            No dejes que tu equipo pase desapercibido con una funda genérica.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {[
-              { label: "Sin estilo", desc: "Una funda del mercado no te diferencia." },
-              { label: "Sin identidad", desc: "Tu iPhone no dice nada de quién eres." },
-              { label: "Se dañan", desc: "Las baratas duran semanas, no meses." },
+              { label: "Sin estilo", desc: "No te diferencia del resto." },
+              { label: "Sin identidad", desc: "No dice nada de quién eres." },
+              { label: "Descartables", desc: "Duran semanas, no meses." },
             ].map(({ label, desc }) => (
-              <div key={label} className="p-6 border border-gray-100 dark:border-white/10 text-left">
-                <p className="font-black text-lg uppercase italic mb-2">{label}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{desc}</p>
+              <div key={label} className="text-center sm:text-left space-y-2">
+                <p className="font-black text-lg uppercase italic text-white">{label}</p>
+                <p className="text-[10px] text-white/40 uppercase tracking-widest">{desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── AGITACIÓN ─── */}
-      <section className="w-full py-20 bg-black text-white border-b border-white/10">
-        <div className="container mx-auto px-4 md:px-6 max-w-3xl text-center">
-          <p className="text-3xl md:text-5xl font-black leading-tight mb-6">
-            Tu iPhone es caro…
-            <br />
-            <span className="italic text-white/50">pero tu funda hace que parezca común.</span>
-          </p>
-          <p className="text-white/60 text-sm md:text-base max-w-[400px] mx-auto leading-relaxed">
-            Cada vez que lo sacas: no destaca, no representa quién eres, no llama la atención.
-          </p>
-        </div>
-      </section>
-
-      {/* ─── SOLUCIÓN ─── */}
+      {/* ─── SOLUCIÓN + BENEFICIOS ─── */}
       <section className="w-full py-20 bg-white dark:bg-black border-b border-gray-100 dark:border-white/10">
         <div className="container mx-auto px-4 md:px-6 max-w-4xl">
-          <div className="text-center mb-12">
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 mb-4">La solución</p>
+          <div className="text-center mb-16">
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 mb-4 italic">Nuestra propuesta</p>
             <h2 className="text-3xl md:text-5xl font-black leading-tight">
-              En Market GS no vendemos fundas.
+              Curamos piezas exclusivas,
               <br />
-              <span className="italic">Curamos estilos.</span>
+              <span className="italic">no vendemos masa.</span>
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { Icon: ShieldCheck, title: "Calidad real", desc: "Solo modelos probados. Nada genérico, nada barato." },
-              { Icon: Zap, title: "Duran de verdad", desc: "Materiales seleccionados que aguantan el uso diario real." },
-              { Icon: Star, title: "Te hacen destacar", desc: "Diseños que se ven mejor en la vida real que en fotos." },
+              { Icon: ShieldCheck, title: "Calidad Real", desc: "Modelos probados y seleccionados." },
+              { Icon: Zap, title: "Diseño Premium", desc: "Tu celular se vuelve parte de tu outfit." },
+              { Icon: Star, title: "Exclusividad", desc: "Destaca con piezas que no verás en otro lugar." },
             ].map(({ Icon, title, desc }) => (
-              <div key={title} className="group p-8 border border-gray-100 dark:border-white/10 hover:border-black dark:hover:border-white transition-all duration-300 bg-gray-50 dark:bg-black cursor-default">
-                <Icon className="h-8 w-8 mb-4 text-black dark:text-white" />
+              <div key={title} className="p-8 border border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-black">
+                <Icon className="h-6 w-6 mb-4 text-black dark:text-white" />
                 <h3 className="font-black text-lg uppercase italic tracking-tight mb-2">{title}</h3>
                 <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">{desc}</p>
               </div>
@@ -163,52 +148,34 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── BENEFICIOS ─── */}
-      <section className="w-full py-20 bg-black text-white border-b border-white/10">
-        <div className="container mx-auto px-4 md:px-6 max-w-3xl">
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-white/40 mb-6 text-center">Por qué importa</p>
-          <div className="space-y-4">
-            {[
-              "Tu celular se vuelve parte de tu outfit.",
-              "Destacas sin decir una palabra.",
-              "Protección real, no solo estética.",
-              "Opciones que sí valen lo que cuestan.",
-            ].map((benefit) => (
-              <div key={benefit} className="flex items-start gap-4 py-4 border-b border-white/10 last:border-0">
-                <Check className="h-4 w-4 mt-0.5 shrink-0" />
-                <p className="font-bold text-base md:text-lg">{benefit}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── PRUEBA SOCIAL ─── */}
+      {/* ─── SOCIAL PROOF + FAQ (Compacto) ─── */}
       <section className="w-full py-20 bg-white dark:bg-black border-b border-gray-100 dark:border-white/10">
-        <div className="container mx-auto px-4 md:px-6 max-w-4xl">
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 mb-10 text-center">Lo que dicen</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map(({ quote, name }) => (
-              <div key={name} className="p-6 border border-gray-100 dark:border-white/10 flex flex-col gap-4">
-                <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 italic">"{quote}"</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">— {name}</p>
+        <div className="container mx-auto px-4 md:px-6 max-w-5xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+            {/* Testimonials */}
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 mb-10">Testimonios</p>
+              <div className="space-y-8">
+                {testimonials.slice(0, 2).map(({ quote, name }) => (
+                  <div key={name} className="border-l-2 border-black dark:border-white pl-6">
+                    <p className="text-base italic mb-2">"{quote}"</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">— {name}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── OBJECIONES ─── */}
-      <section className="w-full py-20 bg-white dark:bg-black border-b border-gray-100 dark:border-white/10">
-        <div className="container mx-auto px-4 md:px-6 max-w-3xl">
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 mb-10 text-center">Preguntas frecuentes</p>
-          <div className="space-y-0 divide-y divide-gray-100 dark:divide-white/10">
-            {objections.map(({ q, a }) => (
-              <div key={q} className="py-6">
-                <p className="font-black text-sm uppercase tracking-tight mb-2">{q}</p>
-                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">→ {a}</p>
+            </div>
+            {/* FAQ */}
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-gray-400 mb-10">FAQ</p>
+              <div className="space-y-6">
+                {objections.slice(0, 2).map(({ q, a }) => (
+                  <div key={q}>
+                    <p className="font-black text-xs uppercase mb-1">{q}</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">{a}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </section>
@@ -226,7 +193,7 @@ export default function LandingPage() {
             🔥 Stock limitado — no trabajamos catálogo masivo
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hola! Quiero ver los modelos disponibles")}`} target="_blank">
+            <Link href={WA_LINK} target="_blank">
               <Button className="bg-white hover:bg-white/80 text-black hover:text-black transition-all h-14 px-12 rounded-none font-black text-sm uppercase tracking-[0.2em] border-none shadow-xl w-64 sm:w-auto">
                 Escríbenos por WhatsApp
               </Button>
@@ -252,11 +219,10 @@ export default function LandingPage() {
             </div>
             <div className="flex flex-wrap justify-center gap-6 md:gap-8">
               {[
-                { href: "#", label: "Instagram", Icon: InstagramIcon },
-                { href: `https://wa.me/${WA_NUMBER}`, label: "WhatsApp", Icon: WhatsAppIcon },
-                { href: "#", label: "TikTok", Icon: TikTokIcon },
-                { href: "#", label: "Facebook", Icon: FacebookIcon },
-                { href: "#", label: "Email", Icon: EmailIcon },
+                { href: WA_LINK, label: "WhatsApp", Icon: WhatsAppIcon },
+                { href: "https://www.tiktok.com/@thobias_gabriel_zabala", label: "TikTok (P)", Icon: TikTokIcon },
+                { href: "https://www.tiktok.com/@market_gs", label: "TikTok (S)", Icon: TikTokIcon },
+                { href: "mailto:Marketgs51@gmail.com", label: "Email", Icon: EmailIcon },
               ].map(({ href, label, Icon }) => (
                 <Link key={label} href={href} target="_blank" className="group flex flex-col items-center gap-2">
                   <div className="p-3 rounded-full border border-white/20 text-white group-hover:bg-white group-hover:text-black group-hover:border-white transition-all duration-300">

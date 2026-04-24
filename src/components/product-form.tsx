@@ -17,6 +17,14 @@ import {
   CheckCircle2,
   Package,
   Info,
+  ArrowRight,
+  ArrowLeft,
+  Sparkles,
+  Trash2,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,74 +41,65 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // Esquema de validación Zod
-const productSchema = z
-  .object({
-    phoneModelId: z.string().min(1, "El modelo es requerido"),
-    typeId: z.string().min(1, "El tipo es requerido"),
-    supplierId: z.string().optional().nullable(),
-    colorId: z.string().min(1, "El color es requerido"),
-    materialId: z.string().optional().nullable(),
-    stock: z.coerce
-      .number()
-      .min(0, "El stock no puede ser negativo")
-      .default(0),
-    minStock: z.coerce
-      .number()
-      .min(0, "El stock mínimo no puede ser negativo")
-      .default(5),
-    priceRetail: z.coerce.number().min(0, "El precio no puede ser negativo"),
-    priceWholesale: z.coerce.number().min(0, "El precio no puede ser negativo"),
-    costPrice: z.coerce.number().min(0, "El costo no puede ser negativo"),
-    hasDiscount: z.boolean().default(false),
-    discountPercentage: z.coerce.number().min(0).max(100).optional().nullable(),
-    discountPrice: z.coerce.number().min(0).optional().nullable(),
-    image: z.instanceof(File).optional().nullable(),
-  })
-  .refine((data) => data.priceWholesale <= data.priceRetail, {
-    message: "El precio mayorista debe ser menor o igual al precio minorista",
-    path: ["priceWholesale"],
-  })
-  .refine(
-    (data) =>
-      !data.hasDiscount ||
-      (data.discountPercentage !== undefined &&
-        data.discountPercentage !== null &&
-        data.discountPercentage > 0),
-    {
-      message: "El porcentaje de descuento es requerido cuando hay descuento",
-      path: ["discountPercentage"],
-    },
-  );
+const productSchema = z.object({
+  phoneModelId: z.string().min(1, "El modelo es requerido"),
+  typeId: z.string().min(1, "El tipo es requerido"),
+  supplierId: z.string().optional().nullable(),
+  colorId: z.string().min(1, "El color es requerido"),
+  materialId: z.string().optional().nullable(),
+  stock: z.coerce.number().min(0, "El stock no puede ser negativo").default(0),
+  stockDamaged: z.coerce.number().min(0, "El stock dañado no puede ser negativo").default(0),
+  minStock: z.coerce.number().min(0, "El stock mínimo no puede ser negativo").default(5),
+  priceRetail: z.coerce.number().optional().nullable(),
+  priceWholesale: z.coerce.number().optional().nullable(),
+  costPrice: z.coerce.number().min(0, "El costo no puede ser negativo"),
+  hasDiscount: z.boolean().default(false),
+  discountPercentage: z.coerce.number().optional().nullable(),
+  discountPrice: z.coerce.number().optional().nullable(),
+  isPublic: z.boolean().default(false),
+  publicPrice: z.coerce.number().optional().nullable(),
+});
 
 export type ProductFormData = z.infer<typeof productSchema>;
 
+interface ProductImage {
+  file?: File;
+  url?: string;
+  preview: string;
+  isCover: boolean;
+  id: string;
+}
+
 export type ProductFormProps = {
-  product?: Partial<ProductFormData>;
+  product?: Partial<ProductFormData & { images?: any[] }>;
   productTypes: { id: string; name: string }[];
   suppliers: { id: string; name: string }[];
-  phoneModels: { id: string; name: string }[];
+  phoneModels: { id: string; name: string; brand?: { name: string } }[];
   colors: { id: string; name: string; hexCode: string }[];
   materials: { id: string; name: string }[];
-  onSubmit: (data: ProductFormData & { image?: File }) => void | Promise<void>;
+  compatibilities: { id: string; name: string; deviceType: string }[];
+  onSubmit: (data: ProductFormData & { 
+    images: File[], 
+    existingImages: { id: string, url: string }[],
+    coverIndex: number 
+  }) => void | Promise<void>;
   loading?: boolean;
 };
 
@@ -114,7 +113,10 @@ export function ProductForm({
   onSubmit,
   loading,
 }: ProductFormProps) {
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [images, setImages] = useState<ProductImage[]>([]);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isGeneratingIA, setIsGeneratingIA] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [localSuppliers, setLocalSuppliers] = useState(suppliers);
   const [isAddingSupplier, setIsAddingSupplier] = useState(false);
@@ -130,68 +132,153 @@ export function ProductForm({
       colorId: product?.colorId || (colors.length > 0 ? colors[0].id : ""),
       materialId: product?.materialId || null,
       stock: product?.stock ?? 0,
+      stockDamaged: product?.stockDamaged ?? 0,
       minStock: product?.minStock ?? 5,
-      priceRetail: product?.priceRetail ?? "",
-      priceWholesale: product?.priceWholesale ?? "",
-      costPrice: product?.costPrice ?? "",
+      priceRetail: product?.priceRetail || 0,
+      priceWholesale: product?.priceWholesale || 0,
+      costPrice: product?.costPrice || 0,
       hasDiscount: product?.hasDiscount || false,
-      discountPercentage: product?.discountPercentage ?? "",
-      discountPrice: product?.discountPrice ?? "",
+      discountPercentage: product?.discountPercentage || 0,
+      discountPrice: product?.discountPrice || 0,
+      isPublic: (product as any)?.isPublic ?? false,
+      publicPrice: (product as any)?.publicPrice ?? null,
     },
   });
 
-  const hasDiscount = form.watch("hasDiscount");
-  const priceRetail = form.watch("priceRetail");
+  const phoneModelId = form.watch("phoneModelId");
+  const typeId = form.watch("typeId");
+  const colorId = form.watch("colorId");
+  const materialId = form.watch("materialId");
 
-  // Manejar cambio en porcentaje de descuento
-  const handleDiscountPercentageChange = (percentage: number) => {
-    form.setValue("discountPercentage", percentage);
-    if (priceRetail && percentage !== undefined) {
-      const discountPrice = priceRetail - (priceRetail * percentage) / 100;
-      form.setValue("discountPrice", parseFloat(discountPrice.toFixed(2)), {
-        shouldValidate: true,
-      });
-    }
-  };
+  const selectedModel = phoneModels.find(m => m.id === phoneModelId);
+  const selectedType = productTypes.find(t => t.id === typeId);
+  const selectedColor = colors.find(c => c.id === colorId);
 
-  // Manejar cambio en precio con descuento
-  const handleDiscountPriceChange = (price: number) => {
-    form.setValue("discountPrice", price);
-    if (priceRetail && price !== undefined && priceRetail > 0) {
-      const percentage = ((priceRetail - price) / priceRetail) * 100;
-      form.setValue("discountPercentage", parseFloat(percentage.toFixed(2)), {
-        shouldValidate: true,
-      });
-    }
-  };
-
-  // Si cambia el precio retail, recalcular el descuento si existe
   useEffect(() => {
-    const percentage = form.getValues("discountPercentage");
-    if (hasDiscount && percentage && priceRetail) {
-      const discountPrice = priceRetail - (priceRetail * percentage) / 100;
-      form.setValue("discountPrice", parseFloat(discountPrice.toFixed(2)), {
-        shouldValidate: true,
-      });
+    if (product?.images && product.images.length > 0) {
+      setImages(product.images.map((img: any) => ({
+        id: img.id,
+        url: img.url,
+        preview: img.url,
+        isCover: img.isCover
+      })));
     }
-  }, [priceRetail, hasDiscount, form]);
+  }, [product]);
 
-  // Manejar preview de imagen
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      form.setValue("image", file, { shouldValidate: true });
-      setImagePreview(URL.createObjectURL(file));
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newImages: ProductImage[] = Array.from(files).map(file => ({
+        id: Math.random().toString(36).substring(7),
+        file,
+        preview: URL.createObjectURL(file),
+        isCover: images.length === 0
+      }));
+      setImages(prev => [...prev, ...newImages]);
+      setActiveImageIndex(images.length);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => {
+      const newImages = [...prev];
+      const removed = newImages.splice(index, 1)[0];
+      if (removed.isCover && newImages.length > 0) {
+        newImages[0].isCover = true;
+      }
+      return newImages;
+    });
+    if (activeImageIndex >= images.length - 1) {
+      setActiveImageIndex(Math.max(0, images.length - 2));
+    }
+  };
+
+  const setAsCover = (index: number) => {
+    setImages(prev => prev.map((img, i) => ({
+      ...img,
+      isCover: i === index
+    })));
+  };
+
+  const generateIAImage = async () => {
+    if (!selectedModel || !selectedType || !selectedColor) {
+      toast.error("Selecciona modelo, tipo y color para la IA.");
+      return;
+    }
+
+    setIsGeneratingIA(true);
+    try {
+      const referenceImage = images.length > 0 ? images[0] : null;
+      let base64Data = "";
+
+      if (referenceImage?.file) {
+        base64Data = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(referenceImage.file!);
+        });
+      } else {
+        toast.error("Sube una imagen primero para usar como referencia.");
+        return;
+      }
+
+      const prompt = `Professional product photography of a ${selectedColor.name} ${selectedType.name} for ${selectedModel.name}. Front view, centered, solid white background, high resolution.`;
+      
+      toast.info("Generando con IA Real...", {
+        description: "Enviando imagen a Gemini 2.0 Flash..."
+      });
+
+      const { improveProductImage } = await import("@/app/actions/ai");
+      const result = await improveProductImage(base64Data, prompt);
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || "Error en la generación");
+      }
+      
+      const newImage: ProductImage = {
+        id: Math.random().toString(36).substring(7),
+        preview: result.data, 
+        isCover: false
+      };
+      
+      setImages(prev => {
+        const next = [...prev, newImage];
+        setActiveImageIndex(next.length - 1);
+        return next;
+      });
+      
+      toast.success(`${selectedType.name} generado con éxito`);
+    } catch (error: any) {
+      console.error("Error generating AI image:", error);
+      toast.error("Error con la IA: " + (error.message || "Intenta de nuevo"));
+    } finally {
+      setIsGeneratingIA(false);
     }
   };
 
   const handleSubmit = async (data: any) => {
+    if (images.length === 0) {
+      toast.error("Añade al menos una imagen.");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await onSubmit(data);
+      const coverIndex = images.findIndex(img => img.isCover);
+      const imageFiles = images.filter(img => img.file).map(img => img.file as File);
+      const existingImages = images.filter(img => !img.file).map(img => ({ id: img.id, url: img.url as string }));
+      
+      await onSubmit({ 
+        ...data, 
+        images: imageFiles, 
+        existingImages,
+        coverIndex: coverIndex === -1 ? 0 : coverIndex 
+      });
+      
       if (!product) {
         form.reset();
-        setImagePreview(null);
+        setImages([]);
+        setCurrentStep(1);
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -215,8 +302,7 @@ export function ProductForm({
         form.setValue("supplierId", created.id);
         setNewSupplierName("");
         setIsSupplierDialogOpen(false);
-      } else {
-        alert("Error al crear el proveedor");
+        toast.success("Proveedor añadido");
       }
     } catch (error) {
       console.error("Error creating supplier:", error);
@@ -225,151 +311,120 @@ export function ProductForm({
     }
   };
 
-  const hasRequiredMasters =
-    productTypes.length > 0 && phoneModels.length > 0 && colors.length > 0;
-
-  if (!hasRequiredMasters) {
-    return (
-      <Card className="border-yellow-400 bg-yellow-50/30">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-4 text-sm text-yellow-800">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-yellow-500" />
-            <div>
-              <p className="font-semibold mb-2">
-                Requisitos faltantes para registrar productos:
-              </p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                {productTypes.length === 0 && (
-                  <li>Al menos un Tipo de Producto</li>
-                )}
-                {phoneModels.length === 0 && (
-                  <li>Al menos un Modelo de Teléfono</li>
-                )}
-                {colors.length === 0 && <li>Al menos un Color</li>}
-              </ul>
-              <p className="mt-4 text-xs">
-                Por favor, completa estas configuraciones en el menú de
-                Configuración antes de continuar.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <div className="w-full max-w-5xl mx-auto">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Columna Lateral: Imagen y Estado */}
-            <div className="lg:col-span-4 space-y-6">
-              <Card className="overflow-hidden border-dashed">
-                <CardHeader className="bg-muted/50 py-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4" />
-                    Imagen del Producto
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="relative group">
-                      <div
-                        className={cn(
-                          "flex flex-col items-center justify-center aspect-square border-2 border-dashed rounded-xl transition-all duration-200 overflow-hidden",
-                          imagePreview
-                            ? "border-primary"
-                            : "border-muted-foreground/20 hover:border-primary/50 bg-muted/20",
-                        )}
-                      >
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          className="hidden"
-                          id="image-upload"
-                        />
-                        <label
-                          htmlFor="image-upload"
-                          className="cursor-pointer flex flex-col items-center justify-center w-full h-full p-4"
-                        >
-                          {imagePreview ? (
-                            <img
-                              src={imagePreview}
-                              alt="Preview"
-                              className="w-full h-full object-contain"
-                            />
-                          ) : (
-                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                              <ImageIcon className="h-10 w-10 opacity-20" />
-                              <span className="text-xs font-medium">
-                                Click para subir
-                              </span>
-                            </div>
-                          )}
-                        </label>
-                      </div>
-                      {imagePreview && (
-                        <div className="absolute top-2 right-2 flex gap-1">
-                          <label
-                            htmlFor="image-upload"
-                            className="bg-background/80 hover:bg-background h-8 w-8 rounded-full flex items-center justify-center cursor-pointer shadow-sm border"
-                          >
-                            <ImageIcon className="h-4 w-4" />
-                          </label>
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-[10px] text-center text-muted-foreground italic leading-tight px-4">
-                      Recomendado: 500x500px, formato JPG/PNG. Calidad alta
-                      mejora las ventas.
-                    </p>
-                    {form.formState.errors.image && (
-                      <p className="text-xs font-medium text-destructive text-center">
-                        {String(form.formState.errors.image.message || "")}
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+    <div className="w-full max-w-4xl mx-auto py-2">
+      <div className="flex items-center justify-center mb-8 gap-4">
+        {[1, 2].map((s) => (
+          <React.Fragment key={s}>
+            <div className={cn(
+              "flex items-center gap-2 px-5 py-2 rounded-full border transition-all duration-300",
+              currentStep === s ? "bg-primary text-white border-primary shadow-md" : "bg-muted/50 text-muted-foreground border-transparent"
+            )}>
+              <span className={cn("h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold", currentStep === s ? "bg-white text-primary" : "bg-muted-foreground/30")}>{s}</span>
+              <span className="text-xs font-bold uppercase tracking-wider">{s === 1 ? "Identificación" : "Logística"}</span>
             </div>
+            {s === 1 && <div className="h-px w-8 bg-muted" />}
+          </React.Fragment>
+        ))}
+      </div>
 
-            {/* Columna Principal: Campos */}
-            <div className="lg:col-span-8 space-y-6">
-              {/* Sección 1: Identificación */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-primary">
-                  <Package className="h-5 w-5" />
-                  <h3 className="font-semibold text-lg">
-                    Identificación y Modelo
-                  </h3>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          {currentStep === 1 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-500">
+              <div className="lg:col-span-7 space-y-4">
+                <Card className="overflow-hidden border-2 border-dashed border-muted bg-muted/5 relative min-h-[400px] flex flex-col items-center justify-center rounded-2xl group">
+                  <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" id="image-upload" />
+                  
+                  {images.length > 0 ? (
+                    <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+                      <div className="relative w-full aspect-square max-h-[320px] flex items-center justify-center">
+                        <img 
+                          src={images[activeImageIndex].preview} 
+                          alt="Preview" 
+                          className="max-w-full max-h-full object-contain drop-shadow-lg transition-transform duration-500 group-hover:scale-105" 
+                        />
+                        
+                        {images.length > 1 && (
+                          <>
+                            <Button type="button" variant="ghost" size="icon" className="absolute left-0 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full hover:bg-background/80" onClick={() => setActiveImageIndex(prev => (prev > 0 ? prev - 1 : images.length - 1))}><ChevronLeft /></Button>
+                            <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full hover:bg-background/80" onClick={() => setActiveImageIndex(prev => (prev < images.length - 1 ? prev + 1 : 0))}><ChevronRight /></Button>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="mt-4 flex items-center gap-2 max-w-full overflow-x-auto pb-2 scrollbar-hide">
+                        {images.map((img, i) => (
+                          <button
+                            key={img.id}
+                            type="button"
+                            onClick={() => setActiveImageIndex(i)}
+                            className={cn(
+                              "relative h-14 w-14 rounded-lg overflow-hidden shrink-0 border-2",
+                              activeImageIndex === i ? "border-primary" : "border-transparent opacity-60"
+                            )}
+                          >
+                            <img src={img.preview} alt="" className="h-full w-full object-cover" />
+                          </button>
+                        ))}
+                        <button type="button" onClick={() => document.getElementById('image-upload')?.click()} className="h-14 w-14 rounded-lg border-2 border-dashed border-primary/20 flex items-center justify-center text-primary/40 hover:text-primary transition-all shrink-0"><Plus /></button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full h-full p-8 text-center space-y-4">
+                      <div className="h-20 w-20 rounded-2xl bg-primary/5 flex items-center justify-center"><ImageIcon className="h-8 w-8 text-primary/40" /></div>
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-lg">Carga de Imágenes</h4>
+                        <p className="text-xs text-muted-foreground max-w-[240px]">Sube fotos reales o genera con IA</p>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" className="rounded-full px-6">Seleccionar</Button>
+                    </label>
+                  )}
+
+                  {images.length > 0 && (
+                    <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button type="button" variant="destructive" size="icon" className="h-8 w-8 rounded-lg shadow-lg" onClick={() => removeImage(activeImageIndex)}><Trash2 className="h-4 w-4" /></Button>
+                      <Button type="button" variant="secondary" size="icon" className={cn("h-8 w-8 rounded-lg shadow-lg", images[activeImageIndex].isCover && "text-yellow-500")} onClick={() => setAsCover(activeImageIndex)}><Star className="h-4 w-4 fill-current" /></Button>
+                    </div>
+                  )}
+
+                  <div className="absolute bottom-4 right-4">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className={cn("rounded-xl shadow-lg font-bold text-[10px] uppercase tracking-wider h-10 px-6", isGeneratingIA && "animate-pulse")}
+                      onClick={generateIAImage}
+                      disabled={isGeneratingIA || !phoneModelId || !typeId}
+                    >
+                      {isGeneratingIA ? "Generando..." : "IA Generar"}
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+
+              <div className="lg:col-span-5 space-y-6">
+                <div className="flex items-center gap-3 text-primary">
+                  <Smartphone className="h-5 w-5" />
+                  <h3 className="font-bold text-lg uppercase tracking-tight">Atributos</h3>
                 </div>
-                <Separator />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+
+                <div className="space-y-4">
                   <FormField
                     control={form.control}
                     name="phoneModelId"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-1.5 capitalize">
-                          <Smartphone className="h-3.5 w-3.5 opacity-70" />
-                          Modelo de Teléfono
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          value={field.value}
-                        >
+                      <FormItem className="space-y-1">
+                        <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Modelo</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger className="bg-background">
-                              <SelectValue placeholder="Seleccionar modelo" />
+                            <SelectTrigger className="h-11 rounded-xl bg-background border-2 transition-all hover:border-primary/30">
+                              <SelectValue placeholder="Modelo..." />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
+                          <SelectContent className="rounded-xl shadow-xl">
                             {phoneModels.map((model) => (
-                              <SelectItem key={model.id} value={model.id}>
-                                {model.name}
+                              <SelectItem key={model.id} value={model.id} className="h-10 text-sm">
+                                {model.name} <span className="text-[10px] opacity-40 ml-2">({model.brand?.name})</span>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -383,26 +438,17 @@ export function ProductForm({
                     control={form.control}
                     name="typeId"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-1.5 capitalize">
-                          <Layers className="h-3.5 w-3.5 opacity-70" />
-                          Tipo de Producto
-                        </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          value={field.value}
-                        >
+                      <FormItem className="space-y-1">
+                        <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Tipo</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger className="bg-background">
-                              <SelectValue placeholder="Seleccionar tipo" />
+                            <SelectTrigger className="h-11 rounded-xl bg-background border-2">
+                              <SelectValue placeholder="Categoría..." />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
+                          <SelectContent className="rounded-xl shadow-xl">
                             {productTypes.map((type) => (
-                              <SelectItem key={type.id} value={type.id}>
-                                {type.name}
-                              </SelectItem>
+                              <SelectItem key={type.id} value={type.id} className="h-10 text-sm">{type.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -411,489 +457,221 @@ export function ProductForm({
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="colorId"
-                    render={({ field }) => {
-                      const selectedColor = colors.find(
-                        (c) => c.id === field.value,
-                      );
-                      return (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-1.5 capitalize">
-                            <Palette className="h-3.5 w-3.5 opacity-70" />
-                            Color Principal
-                          </FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            value={field.value}
-                          >
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="colorId"
+                      render={({ field }) => {
+                        const sc = colors.find((c) => c.id === field.value);
+                        return (
+                          <FormItem className="space-y-1">
+                            <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Color</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-11 rounded-xl bg-background border-2 px-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: sc?.hexCode || "transparent" }} />
+                                    <span className="text-xs truncate">{sc?.name || "Ver"}</span>
+                                  </div>
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="rounded-xl">
+                                {colors.map((color) => (
+                                  <SelectItem key={color.id} value={color.id} className="h-10">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: color.hexCode }} />
+                                      <span className="text-xs">{color.name}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
+                        );
+                      }}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="materialId"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Material</FormLabel>
+                          <Select onValueChange={(val) => field.onChange(val === "unselected" ? null : val)} value={field.value || "unselected"}>
                             <FormControl>
-                              <SelectTrigger className="bg-background">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="w-3.5 h-3.5 rounded-full border shadow-sm"
-                                    style={{
-                                      backgroundColor:
-                                        selectedColor?.hexCode || "#ccc",
-                                    }}
-                                  />
-                                  <span className="truncate">
-                                    {selectedColor?.name || "Seleccionar..."}
-                                  </span>
-                                </div>
+                              <SelectTrigger className="h-11 rounded-xl bg-background border-2 px-3 text-xs">
+                                <SelectValue placeholder="Elegir..." />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent>
-                              {colors.map((color) => (
-                                <SelectItem key={color.id} value={color.id}>
-                                  <div className="flex items-center gap-2">
-                                    <div
-                                      className="w-3.5 h-3.5 rounded-full border shadow-sm"
-                                      style={{ backgroundColor: color.hexCode }}
-                                    />
-                                    <span>{color.name}</span>
-                                  </div>
-                                </SelectItem>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="unselected" className="opacity-40 text-xs italic">Opcional</SelectItem>
+                              {materials.map((m) => (
+                                <SelectItem key={m.id} value={m.id} className="h-10 text-xs">{m.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
-                          <FormMessage />
                         </FormItem>
-                      );
-                    }}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="materialId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-1.5 capitalize text-muted-foreground/80">
-                          Material (Opcional)
-                        </FormLabel>
-                        <Select
-                          onValueChange={(val) =>
-                            field.onChange(val === "unselected" ? null : val)
-                          }
-                          defaultValue={field.value || "unselected"}
-                          value={field.value || "unselected"}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="bg-background opacity-80">
-                              <SelectValue placeholder="Sin material" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="unselected">
-                              Sin material
-                            </SelectItem>
-                            {materials.map((m) => (
-                              <SelectItem key={m.id} value={m.id}>
-                                {m.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Sección 2: Inventario */}
-              <div className="space-y-4 pt-4">
-                <div className="flex items-center gap-2 text-primary">
-                  <Truck className="h-5 w-5" />
-                  <h3 className="font-semibold text-lg">
-                    Logística e Inventario
-                  </h3>
-                </div>
-                <Separator />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
-                  <FormField
-                    control={form.control}
-                    name="supplierId"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-1">
-                        <div className="flex items-center justify-between">
-                          <FormLabel className="capitalize">Proveedor</FormLabel>
-                          <Dialog
-                            open={isSupplierDialogOpen}
-                            onOpenChange={setIsSupplierDialogOpen}
-                          >
-                            <DialogTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs text-primary"
-                              >
-                                <Plus className="h-3 w-3 mr-1" /> Nuevo
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[400px]">
-                              <DialogHeader>
-                                <DialogTitle>Añadir Proveedor</DialogTitle>
-                              </DialogHeader>
-                              <div className="py-4 space-y-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="sup-name">Nombre</Label>
-                                  <Input
-                                    id="sup-name"
-                                    value={newSupplierName}
-                                    onChange={(e) =>
-                                      setNewSupplierName(e.target.value)
-                                    }
-                                    placeholder="Nombre del proveedor"
-                                  />
-                                </div>
-                              </div>
-                              <DialogFooter>
-                                <Button
-                                  type="button"
-                                  onClick={handleQuickAddSupplier}
-                                  disabled={
-                                    isAddingSupplier || !newSupplierName.trim()
-                                  }
-                                >
-                                  {isAddingSupplier
-                                    ? "Añadiendo..."
-                                    : "Guardar"}
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-                        <Select
-                          onValueChange={(val) =>
-                            field.onChange(val === "unselected" ? null : val)
-                          }
-                          defaultValue={field.value || "unselected"}
-                          value={field.value || "unselected"}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="bg-background">
-                              <SelectValue placeholder="Seleccionar..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="unselected">
-                              Sin proveedor
-                            </SelectItem>
-                            {localSuppliers.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {s.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="stock"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-1.5 capitalize">
-                          <Hash className="h-3.5 w-3.5 opacity-70" />
-                          Stock Actual
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            {...field}
-                            value={field.value ?? ""}
-                            onChange={(e) =>
-                              field.onChange(parseInt(e.target.value) || 0)
-                            }
-                            className="bg-background text-center font-semibold"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="minStock"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex gap-1.5 items-center capitalize text-amber-600">
-                          <AlertTriangle className="h-3.5 w-3.5" />
-                          Mínimo Alert
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={0}
-                            {...field}
-                            value={field.value ?? ""}
-                            onChange={(e) =>
-                              field.onChange(parseInt(e.target.value) || 0)
-                            }
-                            className="bg-background text-center border-amber-200"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Sección 3: Precios */}
-              <div className="space-y-4 pt-4">
-                <div className="flex items-center gap-2 text-primary">
-                  <Banknote className="h-5 w-5" />
-                  <h3 className="font-semibold text-lg">
-                    Estructura de Precios
-                  </h3>
-                </div>
-                <Separator />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-muted/30 p-4 rounded-xl border border-muted-foreground/10">
-                  <FormField
-                    control={form.control}
-                    name="costPrice"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1.5">
-                        <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
-                          Costo Inversión
-                        </FormLabel>
-                        <FormControl>
-                          <div className="relative group/input">
-                            <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center bg-muted border-r rounded-l-md text-xs font-bold text-muted-foreground group-focus-within/input:bg-primary/10 group-focus-within/input:text-primary group-focus-within/input:border-primary/30 transition-colors">
-                              Bs.
-                            </div>
-                            <Input
-                              type="number"
-                              min={0}
-                              step="0.01"
-                              className="pl-12 h-10 font-bold"
-                              {...field}
-                              value={field.value ?? ""}
-                              onChange={(e) =>
-                                field.onChange(parseFloat(e.target.value) || 0)
-                              }
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="priceWholesale"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1.5">
-                        <FormLabel className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
-                          Precio Mayorista
-                        </FormLabel>
-                        <FormControl>
-                          <div className="relative group/input">
-                            <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center bg-muted border-r rounded-l-md text-xs font-bold text-muted-foreground group-focus-within/input:bg-primary/10 group-focus-within/input:text-primary group-focus-within/input:border-primary/30 transition-colors">
-                              Bs.
-                            </div>
-                            <Input
-                              type="number"
-                              min={0}
-                              step="0.01"
-                              className="pl-12 h-10 font-bold"
-                              {...field}
-                              value={field.value ?? ""}
-                              onChange={(e) =>
-                                field.onChange(parseFloat(e.target.value) || 0)
-                              }
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="priceRetail"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1.5">
-                        <FormLabel className="text-xs uppercase tracking-wider font-bold text-primary">
-                          Precio Venta (PVP)
-                        </FormLabel>
-                        <FormControl>
-                          <div className="relative group/input">
-                            <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center bg-primary/10 border-r border-primary/20 rounded-l-md text-xs font-bold text-primary group-focus-within/input:bg-primary group-focus-within/input:text-white transition-colors">
-                              Bs.
-                            </div>
-                            <Input
-                              type="number"
-                              min={0}
-                              step="0.01"
-                              className="pl-12 h-10 font-bold border-primary/40 focus-visible:ring-primary shadow-sm"
-                              {...field}
-                              value={field.value ?? ""}
-                              onChange={(e) =>
-                                field.onChange(parseFloat(e.target.value) || 0)
-                              }
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Sección 4: Descuento */}
-              <div className="space-y-4 pt-4 group">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-primary">
-                    <Tags className="h-5 w-5" />
-                    <h3 className="font-semibold text-lg">
-                      Ofertas y Descuentos
-                    </h3>
+                      )}
+                    />
                   </div>
-                  <FormField
-                    control={form.control}
-                    name="hasDiscount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
                 </div>
-                <Separator />
 
-                {hasDiscount ? (
-                  <Card className="border-primary/20 bg-primary/[0.02] transition-all duration-300 animate-in fade-in slide-in-from-top-2">
-                    <CardContent className="pt-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="discountPercentage"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm font-medium">
-                                Porcentaje (%)
-                              </FormLabel>
-                              <FormControl>
-                                <div className="relative">
-                                  <Input
-                                    type="number"
-                                    min={0}
-                                    max={100}
-                                    {...field}
-                                    onChange={(e) =>
-                                      handleDiscountPercentageChange(
-                                        parseFloat(e.target.value) || 0,
-                                      )
-                                    }
-                                    value={field.value ?? ""}
-                                    className="pr-10 font-semibold"
-                                  />
-                                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">
-                                    %
-                                  </div>
-                                </div>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="discountPrice"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm font-medium">
-                                Precio con Descuento (Bs.)
-                              </FormLabel>
-                              <FormControl>
-                                <div className="relative group/input">
-                                  <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center bg-muted border-r rounded-l-md text-xs font-bold">
-                                    Bs.
-                                  </div>
-                                  <Input
-                                    type="number"
-                                    min={0}
-                                    step="0.01"
-                                    className="pl-12 font-bold text-green-600 bg-white"
-                                    {...field}
-                                    onChange={(e) =>
-                                      handleDiscountPriceChange(
-                                        parseFloat(e.target.value) || 0,
-                                      )
-                                    }
-                                    value={field.value ?? ""}
-                                  />
-                                </div>
-                              </FormControl>
-                              <FormDescription className="text-[10px] mt-1 italic">
-                                Calculado instantáneamente
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                <div className="pt-4">
+                  <Button type="button" className="w-full rounded-xl h-12 font-bold uppercase tracking-widest shadow-lg" onClick={() => setCurrentStep(2)} disabled={!phoneModelId || !typeId || !colorId}>Siguiente <ArrowRight className="ml-2 h-4 w-4" /></Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-muted/10 p-6 rounded-2xl space-y-6">
+                  <div className="flex items-center gap-2 text-primary border-b pb-3"><Truck className="h-5 w-5" /><h3 className="font-bold text-sm uppercase">Stock</h3></div>
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="supplierId"
+                      render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <div className="flex items-center justify-between px-1">
+                            <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground">Proveedor</FormLabel>
+                            <Button type="button" variant="link" className="h-auto p-0 text-[10px] font-bold" onClick={() => setIsSupplierDialogOpen(true)}>+ Añadir</Button>
+                          </div>
+                          <Select onValueChange={(val) => field.onChange(val === "unselected" ? null : val)} value={field.value || "unselected"}>
+                            <FormControl><SelectTrigger className="h-11 rounded-xl border-2"><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="unselected" className="opacity-40 italic">Ninguno</SelectItem>
+                              {localSuppliers.map((s) => (<SelectItem key={s.id} value={s.id} className="text-sm">{s.name}</SelectItem>))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="stock" render={({ field }) => (
+                          <FormItem className="space-y-1">
+                            <FormLabel className="text-[10px] font-bold uppercase text-primary">Unidades Nuevas</FormLabel>
+                            <FormControl>
+                              <Input type="number" {...field} className="h-12 rounded-xl text-center font-bold text-lg border-primary/20" onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                            </FormControl>
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="stockDamaged" render={({ field }) => (
+                          <FormItem className="space-y-1">
+                            <FormLabel className="text-[10px] font-bold uppercase text-orange-600">Unidades Dañadas</FormLabel>
+                            <FormControl>
+                              <Input type="number" {...field} className="h-12 rounded-xl text-center font-bold text-lg border-orange-200 bg-orange-50/30" onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                            </FormControl>
+                          </FormItem>
+                        )} />
                       </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="py-8 text-center border border-dashed rounded-xl bg-muted/20">
-                    <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-                      <Info className="h-4 w-4" />
-                      Activa el switch para aplicar un descuento especial
-                    </p>
+                      <FormField control={form.control} name="minStock" render={({ field }) => (
+                        <FormItem className="space-y-1">
+                          <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground">Alerta Stock Mínimo</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} className="h-10 rounded-lg text-center" onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                          </FormControl>
+                        </FormItem>
+                      )} />
+                    </div>
                   </div>
-                )}
+                </Card>
+
+                <Card className="bg-primary/[0.03] p-6 rounded-2xl space-y-6 border border-primary/10">
+                  <div className="flex items-center gap-2 text-primary border-b border-primary/10 pb-3"><Banknote className="h-5 w-5" /><h3 className="font-bold text-sm uppercase">Costos e Inventario Interno</h3></div>
+                  <div className="space-y-4">
+                    <FormField control={form.control} name="costPrice" render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="text-[10px] font-bold uppercase text-primary">Costo del Producto (Bs)</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input 
+                              type="number" 
+                              step="0.01" 
+                              {...field} 
+                              className="h-12 rounded-xl font-bold text-lg pr-12" 
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} 
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">Bs</span>
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                </Card>
+
+                {/* NUEVA SECCIÓN: CATÁLOGO WEB PÚBLICO */}
+                <Card className="bg-blue-500/[0.03] p-6 rounded-2xl space-y-6 border border-blue-500/10">
+                  <div className="flex items-center justify-between border-b border-blue-500/10 pb-3">
+                    <div className="flex items-center gap-2 text-blue-600">
+                      <Sparkles className="h-5 w-5" />
+                      <h3 className="font-bold text-sm uppercase">Catálogo Web</h3>
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="isPublic"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center gap-2 space-y-0">
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="data-[state=checked]:bg-blue-600"
+                            />
+                          </FormControl>
+                          <FormLabel className="text-[10px] font-bold uppercase cursor-pointer">Publicar</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <div className={cn("space-y-4 transition-all duration-300", form.watch("isPublic") ? "opacity-100" : "opacity-40 grayscale pointer-events-none")}>
+                    <FormField control={form.control} name="publicPrice" render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="text-[10px] font-bold uppercase text-blue-600">Precio Público (Catálogo)</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input 
+                              type="number" 
+                              step="0.01" 
+                              {...field} 
+                              value={field.value || ""}
+                              placeholder="Ej: 45.00"
+                              className="h-12 rounded-xl font-bold text-lg pr-12 border-blue-200 focus-visible:ring-blue-500" 
+                              onChange={(e) => field.onChange(parseFloat(e.target.value) || null)} 
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-blue-600/50">Bs</span>
+                          </div>
+                        </FormControl>
+                        <p className="text-[9px] text-muted-foreground italic px-1">Este precio solo se verá en la web pública para clientes.</p>
+                      </FormItem>
+                    )} />
+                  </div>
+                </Card>
+              </div>
+
+              <div className="flex items-center justify-between pt-6">
+                <Button type="button" variant="ghost" className="rounded-xl h-12 px-8 font-bold text-xs" onClick={() => setCurrentStep(1)}><ArrowLeft className="mr-2 h-4 w-4" /> Volver</Button>
+                <Button type="submit" disabled={submitting || loading} className="rounded-xl h-12 px-12 font-bold uppercase tracking-wider shadow-lg bg-primary text-white">{submitting ? "Guardando..." : "Finalizar"}</Button>
               </div>
             </div>
-          </div>
-
-          {/* Footer: Acciones */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t">
-            <div className="text-xs text-muted-foreground order-2 sm:order-1">
-              * Todos los campos marcados son obligatorios para el registro.
-            </div>
-            <div className="flex items-center gap-3 w-full sm:w-auto order-1 sm:order-2">
-              <Button
-                type="submit"
-                disabled={submitting || loading || !form.formState.isValid}
-                className="w-full sm:min-w-[240px] h-11 text-base font-semibold shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                {submitting || loading ? (
-                  <>
-                    <span className="animate-spin mr-2">⟳</span>
-                    Procesando...
-                  </>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    {product ? "Actualizar Producto" : "Finalizar y Registrar"}
-                    <CheckCircle2 className="h-5 w-5" />
-                  </span>
-                )}
-              </Button>
-            </div>
-          </div>
+          )}
         </form>
       </Form>
+
+      {/* Dialog Proveedor Compacto */}
+      <Dialog open={isSupplierDialogOpen} onOpenChange={setIsSupplierDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] p-8 rounded-2xl border-none shadow-2xl">
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase italic text-primary">Nuevo Proveedor</DialogTitle></DialogHeader>
+          <div className="py-6 space-y-4">
+            <div className="space-y-1">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Nombre</Label>
+              <Input value={newSupplierName} onChange={(e) => setNewSupplierName(e.target.value)} placeholder="Ej: Mayorista X" className="h-11 rounded-xl font-bold text-sm" />
+            </div>
+          </div>
+          <DialogFooter><Button type="button" onClick={handleQuickAddSupplier} disabled={isAddingSupplier || !newSupplierName.trim()} className="w-full h-11 rounded-xl font-bold uppercase tracking-wider">Confirmar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

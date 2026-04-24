@@ -22,12 +22,16 @@ export async function createPurchaseAction(data: any) {
     const itemsData = items.map((item: any) => {
       const lineTotal = item.quantityOrdered * item.unitCost;
       calculatedTotal += lineTotal;
-      return {
-        productId: item.productId,
+      const itemObj: any = {
         quantityOrdered: item.quantityOrdered,
         unitCost: item.unitCost,
         totalCost: lineTotal,
       };
+
+      if (item.productId) itemObj.productId = item.productId;
+      if (item.productTypeId) itemObj.productTypeId = item.productTypeId;
+
+      return itemObj;
     });
 
     const purchase = await prisma.purchase.create({
@@ -145,6 +149,37 @@ export async function receivePurchaseAction(purchaseId: string, itemsData: { id:
           receivedAt: new Date()
         }
       });
+
+      // REGISTRAR EGRESO EN WALLET (INVERSIÓN EN INVENTARIO)
+      // Buscamos la compra de nuevo para tener los datos de los items y proveedor
+      const purchase = await tx.purchase.findUnique({
+        where: { id: purchaseId },
+        include: { supplier: true, items: true }
+      });
+
+      if (purchase) {
+        let totalInvestment = 0;
+        for (const item of itemsData) {
+          const originalItem = purchase.items.find(i => i.id === item.id);
+          if (originalItem) {
+            totalInvestment += (item.quantityGood + item.quantityDamaged) * originalItem.unitCost;
+          }
+        }
+
+        if (totalInvestment > 0) {
+          await tx.walletTransaction.create({
+            data: {
+              type: 'egreso',
+              amount: totalInvestment,
+              reason: 'Compra de Mercadería',
+              notes: `Recepción de pedido #${purchase.id.slice(0,8)} - Proveedor: ${purchase.supplier.name}`,
+              referenceId: purchase.id,
+              referenceType: 'Purchase',
+              userId: session.userId as string
+            }
+          });
+        }
+      }
     });
 
     revalidatePath("/compras");

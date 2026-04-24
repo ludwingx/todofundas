@@ -67,7 +67,7 @@ export async function createSaleAction(data: CreateSaleDTO) {
         totalAmount += totalPrice
 
         // Register sale
-        await tx.sale.create({
+        const sale = await tx.sale.create({
           data: {
             productId: item.productId,
             quantity: item.quantity,
@@ -82,6 +82,32 @@ export async function createSaleAction(data: CreateSaleDTO) {
             notes: data.notes || (item.isDamagedStock ? 'Venta de stock dañado' : null)
           }
         })
+
+        // REGISTRAR MOVIMIENTO DE INVENTARIO AUTOMÁTICO
+        await tx.inventoryMovement.create({
+          data: {
+            productId: item.productId,
+            type: 'salida',
+            quantity: item.quantity,
+            reason: 'Venta',
+            notes: item.isDamagedStock ? `Venta de stock dañado - Cliente: ${data.customerName || 'N/A'}` : `Venta - Cliente: ${data.customerName || 'N/A'}`,
+            reference: `Sale:${sale.id}`,
+            userId: session.userId as string
+          }
+        })
+
+        // REGISTRAR INGRESO EN WALLET (FINANZAS)
+        await tx.walletTransaction.create({
+          data: {
+            type: 'ingreso',
+            amount: totalPrice,
+            reason: 'Venta de Producto',
+            notes: `Venta #${sale.id.slice(0,8)} - Cliente: ${data.customerName || 'N/A'}`,
+            referenceId: sale.id,
+            referenceType: 'Sale',
+            userId: session.userId as string
+          }
+        })
       }
 
       return totalAmount
@@ -94,7 +120,7 @@ export async function createSaleAction(data: CreateSaleDTO) {
     // Notificar a admins sobre la venta
     await notifyAdminsAction(
       'Nueva venta registrada',
-      `Venta por $${result.toFixed(2)} (${data.items.length} producto${data.items.length > 1 ? 's' : ''}) - ${data.paymentMethod}`,
+      `Venta por Bs. ${result.toFixed(2)} (${data.items.length} producto${data.items.length > 1 ? 's' : ''}) - ${data.paymentMethod}`,
       'success'
     )
 

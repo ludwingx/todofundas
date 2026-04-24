@@ -98,8 +98,8 @@ const data = {
           url: "/inventario/productos",
         },
         {
-          title: "Proveedores",
-          url: "/configuracion/proveedores",
+          title: "Catálogo Público",
+          url: "/inventario/catalogo",
         },
         {
           title: "Movimientos",
@@ -135,6 +135,10 @@ const data = {
         {
           title: "Usuarios",
           url: "/configuracion/usuarios",
+        },
+        {
+          title: "Proveedores",
+          url: "/configuracion/proveedores",
         },
         {
           title: "Ajustes",

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,38 +9,31 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import CatalogManagementClient from "./CatalogManagementClient";
+import { prisma } from "@/lib/prisma";
 import { getSession } from "@/app/actions/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import NewPurchaseClient from "./NewPurchaseClient";
 
-export default async function NewPurchasePage() {
+export default async function CatalogPage() {
   const session = await getSession();
   if (!session) {
     redirect("/login");
   }
 
-  // Fetch necessary data for the form
-  const suppliers = await prisma.supplier.findMany({
-    where: { status: "active" },
-    select: { id: true, name: true }
-  });
-
+  // Fetch all active products with their details
   const products = await prisma.product.findMany({
-    where: { status: "active" },
-    select: {
-      id: true,
-      costPrice: true,
-      stock: true,
-      phoneModel: { select: { name: true } },
-      type: { select: { name: true } },
-      color: { select: { name: true, hexCode: true } }
-    }
-  });
-
-  const productTypes = await prisma.productType.findMany({
-    where: { status: "active" },
-    select: { id: true, name: true }
+    where: {
+      status: "active",
+    },
+    include: {
+      phoneModel: true,
+      type: true,
+      color: { select: { name: true } },
+      images: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
   });
 
   return (
@@ -54,23 +48,24 @@ export default async function NewPurchasePage() {
                 <BreadcrumbLink href="/dashboard">Market GS</BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="/compras">Compras</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>
-                <BreadcrumbPage>Nueva Compra</BreadcrumbPage>
+                <BreadcrumbPage>Gestión de Catálogo</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
       </header>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Registrar Pedido</h1>
-          <p className="text-muted-foreground">Crea una nueva orden de compra a proveedor.</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Gestión de Catálogo Web</h1>
+            <p className="text-muted-foreground">Controla la visibilidad y precios de exhibición en tu tienda pública.</p>
+          </div>
         </div>
-        <NewPurchaseClient suppliers={suppliers} products={products} productTypes={productTypes} />
+        
+        <Suspense fallback={<div>Cargando catálogo...</div>}>
+          <CatalogManagementClient initialProducts={products as any} />
+        </Suspense>
       </div>
     </>
   );

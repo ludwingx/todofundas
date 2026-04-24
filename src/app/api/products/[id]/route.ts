@@ -7,10 +7,10 @@ export const runtime = "nodejs";
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     console.log(`Iniciando actualización del producto ${id}`);
 
     const formData = await req.formData();
@@ -45,35 +45,71 @@ export async function PUT(
       );
     }
 
-    // Procesar imagen si viene
-    let imageUrl: string | undefined;
-    const imageFile = formData.get("image");
+    // PROCESAR IMÁGENES
+    const existingImagesData = formData.get("existingImages");
+    const existingImages = existingImagesData ? JSON.parse(String(existingImagesData)) : [];
+    const newImagesFiles = formData.getAll("images");
+    const coverIndex = Number(formData.get("coverIndex") || 0);
 
-    if (
-      imageFile &&
-      typeof imageFile === "object" &&
-      "arrayBuffer" in imageFile
-    ) {
-      try {
+    const { uploadToOBFiles } = await import("@/lib/ob-files");
+    const productImagesData = [];
+    let primaryImageUrl: string | null = null;
+
+    // 1. Identificar imágenes existentes a mantener
+    const currentImages = await prisma.productImage.findMany({
+      where: { productId: id }
+    });
+
+    // Eliminar las que ya no están en la lista
+    const keepUrls = existingImages.map((img: any) => img.url);
+    const toDelete = currentImages.filter(img => !keepUrls.includes(img.url));
+    
+    if (toDelete.length > 0) {
+      await prisma.productImage.deleteMany({
+        where: { id: { in: toDelete.map(img => img.id) } }
+      });
+    }
+
+    // Preparar datos de las que se quedan
+    for (const img of existingImages) {
+      const isCover = existingImages.indexOf(img) === coverIndex;
+      if (isCover) primaryImageUrl = img.url;
+      productImagesData.push({
+        url: img.url,
+        isCover
+      });
+    }
+
+    // 2. Procesar nuevas imágenes
+    for (let i = 0; i < newImagesFiles.length; i++) {
+      const imageFile = newImagesFiles[i];
+      if (imageFile && typeof imageFile === "object" && "arrayBuffer" in imageFile) {
         const file = imageFile as File;
         const buffer = Buffer.from(await file.arrayBuffer());
-        const filename = `product_${Date.now()}_${Math.random()
-          .toString(36)
-          .slice(2)}.jpg`;
-        const uploadDir = path.join(process.cwd(), "public", "uploads");
-
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
+        const filename = `product_${id}_${Date.now()}_${i}.jpg`;
+        
+        const uploadRes = await uploadToOBFiles(buffer, filename, file.type || "image/jpeg");
+        
+        if (uploadRes.success && uploadRes.url) {
+          const url = uploadRes.url;
+          // El coverIndex se refiere a la posición global o solo de las nuevas?
+          // En ProductForm lo calculamos globalmente. 
+          // Ajustemos: si el coverIndex es >= existingImages.length, es una de las nuevas.
+          const isCover = (existingImages.length + i) === coverIndex;
+          if (isCover) primaryImageUrl = url;
+          
+          productImagesData.push({
+            url,
+            isCover
+          });
         }
-
-        const filePath = path.join(uploadDir, filename);
-        fs.writeFileSync(filePath, buffer);
-        imageUrl = `/uploads/${filename}`;
-        console.log("Imagen guardada en:", imageUrl);
-      } catch (error) {
-        console.error("Error al procesar la imagen:", error);
-        // No detenemos el flujo por un error en la imagen
       }
+    }
+
+    // Si no hay cover después de procesar todo, el primero es el cover
+    if (!primaryImageUrl && productImagesData.length > 0) {
+      primaryImageUrl = productImagesData[0].url;
+      productImagesData[0].isCover = true;
     }
 
     const updateData: any = {
@@ -81,33 +117,40 @@ export async function PUT(
       typeId: String(data.typeId),
       supplierId: data.supplierId ? String(data.supplierId) : null,
       colorId: data.colorId ? String(data.colorId) : undefined,
-      materialId:
-        data.materialId && data.materialId !== ""
-          ? String(data.materialId)
-          : null,
+      materialId: data.materialId && data.materialId !== "" ? String(data.materialId) : null,
       stock: Number(data.stock) || 0,
       minStock: data.minStock !== undefined ? Number(data.minStock) : 0,
       priceRetail: Number(data.priceRetail) || 0,
       priceWholesale: data.priceWholesale ? Number(data.priceWholesale) : 0,
       costPrice: data.costPrice ? Number(data.costPrice) : 0,
+      isPublic: data.isPublic === "true" || data.isPublic === true,
+      publicPrice: data.publicPrice && data.publicPrice !== "null" ? Number(data.publicPrice) : null,
       hasDiscount: data.hasDiscount === "true" || data.hasDiscount === true,
-      discountPercentage: data.discountPercentage
-        ? Number(data.discountPercentage)
-        : null,
+      discountPercentage: data.discountPercentage ? Number(data.discountPercentage) : null,
       discountPrice: data.discountPrice ? Number(data.discountPrice) : null,
+      imageUrl: primaryImageUrl,
     };
-
-    // Agregar la URL de la imagen si se subió una nueva
-    if (imageUrl) {
-      updateData.imageUrl = imageUrl;
-    }
 
     console.log("Datos para actualizar:", JSON.stringify(updateData, null, 2));
 
-    // Actualizar el producto
-    const updated = await prisma.product.update({
-      where: { id },
-      data: updateData,
+    // Actualizar el producto y sus imágenes
+    const updated = await prisma.$transaction(async (tx) => {
+      // 1. Limpiar imágenes actuales (ya borramos las que no queríamos arriba, pero por seguridad y orden lo manejamos aquí)
+      await tx.productImage.deleteMany({ where: { productId: id } });
+      
+      // 2. Crear las nuevas (o recrear las que mantenemos)
+      await tx.productImage.createMany({
+        data: productImagesData.map(img => ({
+          ...img,
+          productId: id
+        }))
+      });
+
+      // 3. Actualizar producto
+      return await tx.product.update({
+        where: { id },
+        data: updateData,
+      });
     });
 
     console.log("Producto actualizado correctamente:", updated.id);
@@ -124,18 +167,21 @@ export async function PUT(
 // PATCH /api/products/[id] - actualizar solo estado u otros campos simples via JSON
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const data: Record<string, unknown> = {};
     if (body.status) {
       data.status = String(body.status);
     }
-    // Extensible: permitir cambios puntuales sin usar formData
     if (body.minStock !== undefined) data.minStock = Number(body.minStock);
+    if (body.isPublic !== undefined) data.isPublic = Boolean(body.isPublic);
+    if (body.publicPrice !== undefined) {
+      data.publicPrice = body.publicPrice === null ? null : Number(body.publicPrice);
+    }
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json(
@@ -158,10 +204,10 @@ export async function PATCH(
 // DELETE /api/products/[id] - soft delete (status = 'deleted')
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     await prisma.product.update({ where: { id }, data: { status: "deleted" } });
     return NextResponse.json({ ok: true });
   } catch (error) {

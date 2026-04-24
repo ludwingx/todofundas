@@ -20,7 +20,12 @@ interface Movement {
   reason: string;
   notes: string | null;
   createdAt: string;
-  product?: { id: string; phoneModelId: string; color: string };
+  product?: { 
+    id: string; 
+    phoneModel: { name: string }; 
+    type: { name: string };
+    color: { name: string } | null;
+  };
 }
 
 export default function InventoryMovementsPageClient() {
@@ -221,11 +226,37 @@ export default function InventoryMovementsPageClient() {
                   filtered.map((m, idx) => (
                     <TableRow key={m.id} className="group hover:bg-muted/50">
                       <TableCell className="py-4 text-muted-foreground pl-6">{idx + 1}</TableCell>
-                      <TableCell className="py-4">{m.type}</TableCell>
-                      <TableCell className="py-4">{m.quantity}</TableCell>
-                      <TableCell className="py-4">{m.reason}</TableCell>
-                      <TableCell className="py-4">{m.productId}</TableCell>
-                      <TableCell className="py-4">{m.createdAt.slice(0,10)}</TableCell>
+                      <TableCell className="py-4">
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
+                          m.type === 'entrada' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                          m.type === 'salida' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                          'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        }`}>
+                          {m.type}
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-4 font-bold">{m.quantity}</TableCell>
+                      <TableCell className="py-4">
+                        <div className="font-medium">{m.reason}</div>
+                        {m.notes && <div className="text-[10px] text-muted-foreground truncate max-w-[200px]">{m.notes}</div>}
+                      </TableCell>
+                      <TableCell className="py-4">
+                        {m.product ? (
+                          <div>
+                            <div className="font-medium text-xs">
+                              {m.product.type.name} {m.product.phoneModel.name}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {m.product.color?.name || 'S/C'}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{m.productId.slice(0,8)}...</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-4 text-xs text-muted-foreground">
+                        {new Date(m.createdAt).toLocaleDateString()}
+                      </TableCell>
                       <TableCell className="py-4 pr-6">
                         <div className="flex justify-end gap-2">
                           <Button

@@ -27,7 +27,9 @@ export function CompanyHeader({
       <SidebarMenuItem>
         <SidebarMenuButton size="lg" className="cursor-default hover:bg-transparent">
           <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-black dark:bg-white border border-black/10 dark:border-white/10">
-            <ForcedMarketLogo variant="auto" className="size-7 dark:hidden" />
+            {/* Modo claro: fondo negro → logo blanco */}
+            <ForcedMarketLogo variant="light" className="size-7 dark:hidden" />
+            {/* Modo oscuro: fondo blanco → logo negro */}
             <ForcedMarketLogo variant="dark" className="size-7 hidden dark:block" />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight ml-2">

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ProductForm } from "@/components/product-form";
+import { ProductForm, ProductFormData } from "@/components/product-form";
 import { toast } from "sonner";
 
 type BasicRef = { id: string; name: string };
@@ -13,13 +13,16 @@ type ProductData = {
   color: { id: string; name: string; hexCode: string };
   material?: { id: string; name: string } | null;
   stock: number;
+  stockDamaged: number;
   minStock: number;
-  priceRetail: number;
-  priceWholesale: number;
+  priceRetail?: number | null;
+  priceWholesale?: number | null;
   costPrice: number;
   hasDiscount?: boolean;
   discountPercentage?: number | null;
   discountPrice?: number | null;
+  isPublic?: boolean;
+  publicPrice?: number | null;
 };
 
 export default function EditProductClient({
@@ -29,32 +32,56 @@ export default function EditProductClient({
   phoneModels,
   colors,
   materials,
+  compatibilities,
   onSuccess,
 }: {
   product: ProductData;
   productTypes: BasicRef[];
   suppliers: BasicRef[];
-  phoneModels: BasicRef[];
+  phoneModels: { id: string; name: string; brand?: { name: string } }[];
   colors: { id: string; name: string; hexCode: string }[];
   materials: { id: string; name: string }[];
+  compatibilities: { id: string; name: string; deviceType: string }[];
   onSuccess?: () => void;
 }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  async function handleProductSubmit(data: FormData) {
+  async function handleProductSubmit(values: ProductFormData & { images: File[], coverIndex: number }) {
     setLoading(true);
     try {
-      // Para debug: mostrar los datos que se están enviando
-      const formDataObj: Record<string, any> = {};
-      for (const [key, value] of data.entries()) {
-        formDataObj[key] = value;
-      }
-      console.log("Datos del formulario:", formDataObj);
+      const formData = new FormData();
+      
+      // Separar imágenes existentes de las nuevas
+      // El formulario ahora nos pasa todos los datos
+      // Pero EditProductClient necesita saber cuáles son de URL y cuáles de FILE
+      
+      // 1. Filtrar campos de texto normales
+      Object.entries(values).forEach(([key, value]) => {
+        if (key !== 'images' && value !== undefined && value !== null) {
+          formData.append(key, String(value));
+        }
+      });
+
+      // 2. Manejar imágenes
+      // Necesitamos el estado interno de imágenes del formulario
+      // Pero onSubmit solo recibe lo procesado. 
+      // Vamos a confiar en lo que envíe ProductForm.
+      
+      // Añadimos las imágenes nuevas (archivos)
+      values.images.forEach(file => {
+        formData.append("images", file);
+      });
+
+      // Añadimos el coverIndex
+      formData.append("coverIndex", String(values.coverIndex));
+
+      // 3. Añadir imágenes existentes (las que no son archivos)
+      formData.append("existingImages", JSON.stringify(values.existingImages));
 
       const res = await fetch(`/api/products/${product.id}`, {
         method: "PUT",
-        body: data,
+        body: formData,
       });
 
       const responseText = await res.text();
@@ -109,6 +136,7 @@ export default function EditProductClient({
       phoneModels={phoneModels}
       colors={colors}
       materials={materials}
+      compatibilities={compatibilities}
       onSubmit={handleProductSubmit}
       loading={loading}
     />

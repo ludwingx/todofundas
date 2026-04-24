@@ -34,9 +34,9 @@ export async function POST(request: Request) {
 
     // Validar formato hexadecimal
     const hexRegex = /^#[0-9A-Fa-f]{6}$/
-    if (!hexRegex.test(hexCode)) {
+    if (hexCode !== 'transparent' && !hexRegex.test(hexCode)) {
       return NextResponse.json(
-        { error: 'Código hexadecimal inválido. Debe ser formato #RRGGBB' },
+        { error: 'Código hexadecimal inválido. Debe ser formato #RRGGBB o "transparent"' },
         { status: 400 }
       )
     }
