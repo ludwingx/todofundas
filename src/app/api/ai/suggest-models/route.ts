@@ -48,12 +48,15 @@ export async function POST(req: NextRequest) {
           },
           { 
             role: "user", 
-            content: `Genera una lista de los ${count} modelos de "${brandName}" más recientes hoy ${currentDate}.
+            content: `
+              Genera una lista de los ${count} modelos de "${brandName}" más recientes hoy ${currentDate}.
             - El tope máximo para Apple es la serie ${latestConfirmedSeries}.
             - SOLO el nombre (Ejemplo: "${latestConfirmedSeries} Pro Max", NO "Serie ${latestConfirmedSeries} Pro Max").
             - NO incluyas la marca "${brandName}".
             - No repitas estos: ${existingModels.join(', ')}.
-            - Formato: Solo nombres separados por comas, sin texto extra.`
+            - Formato: Solo nombres separados por comas, sin texto extra.
+             
+            `
           }
         ],
       })
