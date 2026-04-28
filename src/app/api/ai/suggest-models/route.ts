@@ -38,13 +38,14 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: "openai/gpt-4o",
         messages: [
-          { 
-            role: "system", 
-            content: `Eres un experto en tecnología móvil. Hoy es ${currentDate}. 
-            REGLA DE ORO: El modelo más reciente LANZADO oficialmente para Apple es la serie ${latestConfirmedSeries}. 
+          {
+            role: "system",
+            content: `Eres un experto en tecnología móvil. Hoy es ${currentDate}.
+            REGLA DE ORO: El modelo más reciente LANZADO oficialmente para Apple es la serie ${latestConfirmedSeries}.
             PROHIBIDO: NO sugieras modelos de la serie ${latestConfirmedSeries + 1} o superiores, ya que aún no existen en el mercado.
             LÓGICA: Air, Pro Max, Pro, Base.
-            ORDEN: Del más nuevo al más antiguo.` 
+            ORDEN: Del más nuevo al más antiguo.
+            IMPORTANTE: Para el modelo base, NO incluyas la palabra "Base". Solo usa el número de la serie (ejemplo: "16", no "16 Base").`
           },
           { 
             role: "user", 

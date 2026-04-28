@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -71,19 +71,7 @@ export default function BrandsClient({
     return filtered.slice(start, start + pageSize);
   }, [filtered, page, pageSize]);
 
-  useEffect(() => {
-    setPage(1);
-    load();
-  }, [showDeleted, reloadKey]);
-
-  // Actualizar contador de eliminados
-  useEffect(() => {
-    const count = Brands.filter((m) => m.status === "deleted").length;
-    setDeletedCount(count);
-    if (onDeletedCountChange) onDeletedCountChange(count);
-  }, [Brands, onDeletedCountChange]);
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const url = `/api/brands?all=true`;
@@ -101,11 +89,23 @@ export default function BrandsClient({
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+    load();
+  }, [showDeleted, reloadKey, load]);
+
+  // Actualizar contador de eliminados
+  useEffect(() => {
+    const count = Brands.filter((m) => m.status === "deleted").length;
+    setDeletedCount(count);
+    if (onDeletedCountChange) onDeletedCountChange(count);
+  }, [Brands, onDeletedCountChange]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   function startEdit(Brand: Brand) {
     setEditingId(Brand.id);
