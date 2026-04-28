@@ -1,4 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Leer el archivo de tipos de dispositivos
+function getIPhoneModels(): string[] {
+  try {
+    const filePath = join(process.cwd(), 'src/app/api/phone-models/types_Devices.md');
+    const content = readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n');
+
+    const models: string[] = [];
+    for (const line of lines) {
+      const match = line.match(/^iPhone\d+,\d+ : (.+)$/);
+      if (match) {
+        models.push(match[1]);
+      }
+    }
+
+    return models;
+  } catch (error) {
+    console.error('Error al leer types_Devices.md:', error);
+    return [];
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,10 +46,13 @@ export async function POST(req: NextRequest) {
     // 2024 -> iPhone 16
     // 2025 -> iPhone 17
     // 2026 -> iPhone 18 (pero solo a partir de Septiembre)
-    let latestConfirmedSeries = currentYear - 2008; 
+    let latestConfirmedSeries = currentYear - 2008;
     if (currentMonth < 9) {
       latestConfirmedSeries -= 1;
     }
+
+    // Obtener modelos reales del archivo
+    const allModels = getIPhoneModels();
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -43,20 +70,20 @@ export async function POST(req: NextRequest) {
             content: `Eres un experto en tecnología móvil. Hoy es ${currentDate}.
             REGLA DE ORO: El modelo más reciente LANZADO oficialmente para Apple es la serie ${latestConfirmedSeries}.
             PROHIBIDO: NO sugieras modelos de la serie ${latestConfirmedSeries + 1} o superiores, ya que aún no existen en el mercado.
-            LÓGICA: Air, Pro Max, Pro, Base.
             ORDEN: Del más nuevo al más antiguo.
-            IMPORTANTE: Para el modelo base, NO incluyas la palabra "Base". Solo usa el número de la serie (ejemplo: "16", no "16 Base").`
+            IMPORTANTE: Usa EXACTAMENTE los nombres de la lista proporcionada. No inventes nombres.`
           },
-          { 
-            role: "user", 
+          {
+            role: "user",
             content: `
-              Genera una lista de los ${count} modelos de "${brandName}" más recientes hoy ${currentDate}.
-            - El tope máximo para Apple es la serie ${latestConfirmedSeries}.
-            - SOLO el nombre (Ejemplo: "${latestConfirmedSeries} Pro Max", NO "Serie ${latestConfirmedSeries} Pro Max").
-            - NO incluyas la marca "${brandName}".
-            - No repitas estos: ${existingModels.join(', ')}.
-            - Formato: Solo nombres separados por comas, sin texto extra.
-             
+              De esta lista de modelos reales de iPhone, selecciona los ${count} más recientes hoy ${currentDate}:
+              ${allModels.join('\n')}
+
+              - El tope máximo es la serie ${latestConfirmedSeries}.
+              - NO incluyas la marca "${brandName}".
+              - No repitas estos: ${existingModels.join(', ')}.
+              - Formato: Solo nombres separados por comas, sin texto extra.
+              - Usa EXACTAMENTE los nombres de la lista, no los modifiques.
             `
           }
         ],
@@ -64,7 +91,7 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(data.error?.message || 'Error en OpenRouter');
     }
