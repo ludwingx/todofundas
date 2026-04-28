@@ -13,7 +13,9 @@ function getIPhoneModels(): string[] {
     for (const line of lines) {
       const match = line.match(/^iPhone\d+,\d+ : (.+)$/);
       if (match) {
-        models.push(match[1]);
+        // Eliminar el prefijo "iPhone" del nombre
+        const modelName = match[1].replace(/^iPhone\s+/, '');
+        models.push(modelName);
       }
     }
 
