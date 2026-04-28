@@ -16,16 +16,12 @@ type ProductData = {
   id: string;
   phoneModelId: string;
   typeId: string;
-  supplierId: string | null;
   color: { id: string; name: string; hexCode: string };
   material?: { id: string; name: string } | null;
   compatibility?: { id: string; name: string; deviceType: string } | null;
-  stock: number;
-  stockDamaged: number;
   minStock: number;
   priceRetail?: number | null;
   priceWholesale?: number | null;
-  costPrice: number;
   hasDiscount?: boolean;
   discountPercentage?: number | null;
   discountPrice?: number | null;
@@ -35,7 +31,6 @@ export default function ProductEditDialog({
   trigger,
   product,
   productTypes,
-  suppliers,
   phoneModels,
   colors,
   materials,
@@ -43,7 +38,6 @@ export default function ProductEditDialog({
 }: {
   product: ProductData;
   productTypes: BasicRef[];
-  suppliers: BasicRef[];
   phoneModels: BasicRef[];
   colors: { id: string; name: string; hexCode: string }[];
   materials: { id: string; name: string }[];
@@ -70,7 +64,6 @@ export default function ProductEditDialog({
         <EditProductClient
           product={product}
           productTypes={productTypes}
-          suppliers={suppliers}
           phoneModels={phoneModels}
           colors={colors}
           materials={materials}

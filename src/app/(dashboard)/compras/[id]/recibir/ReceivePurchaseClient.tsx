@@ -103,7 +103,14 @@ export default function ReceivePurchaseClient({ purchase }: { purchase: any }) {
 
                   return (
                     <tr key={item.id} className="border-b">
-                      <td className="p-3 font-medium">{item.name}</td>
+                      <td className="p-3">
+                        <div className="font-medium">{item.name}</div>
+                        {!item.productId && (
+                          <Badge variant="outline" className="mt-1 text-[10px] border-amber-500 text-amber-600 bg-amber-50">
+                            No afectará stock (Sin producto asignado)
+                          </Badge>
+                        )}
+                      </td>
                       <td className="p-3 text-center">
                         <Badge variant="outline" className={`text-base ${isMissing ? 'border-yellow-400 text-yellow-600' : isOver ? 'border-purple-400 text-purple-600' : ''}`}>
                           {item.quantityOrdered}

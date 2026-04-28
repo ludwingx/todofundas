@@ -74,7 +74,6 @@ model Supplier {
   email     String?
   phone     String?
   address   String?
-  products  Product[]
   purchases Purchase[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -123,14 +122,12 @@ model Product {
   minStock           Int                 @default(5)
   priceRetail        Float?
   priceWholesale     Float?
-  costPrice          Float
+  costPrice          Float?              @default(0)
   hasDiscount        Boolean             @default(false)
   discountPercentage Int?
   discountPrice      Float?
   type               ProductType         @relation(fields: [typeId], references: [id])
   typeId             String
-  supplier           Supplier?           @relation(fields: [supplierId], references: [id])
-  supplierId         String?
   material           Material?           @relation(fields: [materialId], references: [id])
   materialId         String?
   sales              Sale[]
@@ -189,7 +186,9 @@ model Purchase {
   supplierId    String
   supplier      Supplier       @relation(fields: [supplierId], references: [id])
   items         PurchaseItem[]
-  totalAmount   Float          @default(0)
+  totalAmount   Float          @default(0) // Suma de los unitCost * quantity de los items
+  shippingCost  Float          @default(0) // Costos de envío/transporte (viáticos, combustible)
+  otherCosts    Float          @default(0) // Otros gastos asociados a la compra
   status        String         @default("pendiente") // pendiente, recibido, parcial, cancelado
   invoiceNumber String?
   notes         String?

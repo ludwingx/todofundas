@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET: Listar todas las marcas activas
-export async function GET() {
+// GET: Listar marcas (activas o todas según parámetro all)
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const all = searchParams.get("all") === "true";
+
   const brands = await prisma.brand.findMany({
-    where: { status: "active" },
+    where: all ? undefined : { status: "active" },
     orderBy: { name: "asc" },
   });
   return NextResponse.json(brands);

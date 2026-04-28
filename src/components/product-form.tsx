@@ -57,19 +57,14 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-// Esquema de validación Zod
 const productSchema = z.object({
   phoneModelId: z.string().min(1, "El modelo es requerido"),
   typeId: z.string().min(1, "El tipo es requerido"),
-  supplierId: z.string().optional().nullable(),
   colorId: z.string().min(1, "El color es requerido"),
   materialId: z.string().optional().nullable(),
-  stock: z.coerce.number().min(0, "El stock no puede ser negativo").default(0),
-  stockDamaged: z.coerce.number().min(0, "El stock dañado no puede ser negativo").default(0),
   minStock: z.coerce.number().min(0, "El stock mínimo no puede ser negativo").default(5),
   priceRetail: z.coerce.number().optional().nullable(),
   priceWholesale: z.coerce.number().optional().nullable(),
-  costPrice: z.coerce.number().min(0, "El costo no puede ser negativo"),
   hasDiscount: z.boolean().default(false),
   discountPercentage: z.coerce.number().optional().nullable(),
   discountPrice: z.coerce.number().optional().nullable(),
@@ -90,7 +85,6 @@ interface ProductImage {
 export type ProductFormProps = {
   product?: Partial<ProductFormData & { images?: any[] }>;
   productTypes: { id: string; name: string }[];
-  suppliers: { id: string; name: string }[];
   phoneModels: { id: string; name: string; brand?: { name: string } }[];
   colors: { id: string; name: string; hexCode: string }[];
   materials: { id: string; name: string }[];
@@ -106,7 +100,6 @@ export type ProductFormProps = {
 export function ProductForm({
   product,
   productTypes,
-  suppliers,
   phoneModels,
   colors,
   materials,
@@ -117,31 +110,41 @@ export function ProductForm({
   const [images, setImages] = useState<ProductImage[]>([]);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isGeneratingIA, setIsGeneratingIA] = useState(false);
+  const [isAnalyzingIA, setIsAnalyzingIA] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [localSuppliers, setLocalSuppliers] = useState(suppliers);
-  const [isAddingSupplier, setIsAddingSupplier] = useState(false);
-  const [newSupplierName, setNewSupplierName] = useState("");
-  const [isSupplierDialogOpen, setIsSupplierDialogOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  const [localPhoneModels, setLocalPhoneModels] = useState(phoneModels);
+  const [localColors, setLocalColors] = useState(colors);
+
+  const [isColorDialogOpen, setIsColorDialogOpen] = useState(false);
+  const [isModelDialogOpen, setIsModelDialogOpen] = useState(false);
+
+  const [newColor, setNewColor] = useState({ name: "", hexCode: "#000000" });
+  const [newModel, setNewModel] = useState({ name: "", brandId: "" });
+  const [brands, setBrands] = useState<{id: string, name: string}[]>([]);
+
+  const [isAddingAttribute, setIsAddingAttribute] = useState(false);
 
   const form = useForm<any>({
     resolver: zodResolver(productSchema) as any,
     defaultValues: {
       phoneModelId: product?.phoneModelId || "",
       typeId: product?.typeId || "",
-      supplierId: product?.supplierId || null,
-      colorId: product?.colorId || (colors.length > 0 ? colors[0].id : ""),
+      colorId: product?.colorId || "",
       materialId: product?.materialId || null,
-      stock: product?.stock ?? 0,
-      stockDamaged: product?.stockDamaged ?? 0,
       minStock: product?.minStock ?? 5,
-      priceRetail: product?.priceRetail || 0,
-      priceWholesale: product?.priceWholesale || 0,
-      costPrice: product?.costPrice || 0,
+      priceRetail: product?.priceRetail || null,
+      priceWholesale: product?.priceWholesale || null,
       hasDiscount: product?.hasDiscount || false,
-      discountPercentage: product?.discountPercentage || 0,
-      discountPrice: product?.discountPrice || 0,
-      isPublic: (product as any)?.isPublic ?? false,
-      publicPrice: (product as any)?.publicPrice ?? null,
+      discountPercentage: product?.discountPercentage || null,
+      discountPrice: product?.discountPrice || null,
+      isPublic: product?.isPublic ?? false,
+      publicPrice: product?.publicPrice ?? null,
     },
   });
 
@@ -198,6 +201,124 @@ export function ProductForm({
       ...img,
       isCover: i === index
     })));
+  };
+
+  const analyzeIA = async () => {
+    if (images.length === 0) {
+      toast.error("Sube una imagen primero para analizar.");
+      return;
+    }
+
+    setIsAnalyzingIA(true);
+    try {
+      const activeImage = images[activeImageIndex];
+      let base64Data = "";
+
+      if (activeImage.file) {
+        base64Data = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(activeImage.file!);
+        });
+      } else {
+        base64Data = activeImage.url!;
+      }
+
+      const { analyzeProductImage } = await import("@/app/actions/ai");
+      const result = await analyzeProductImage(base64Data);
+
+      if (result.success && result.data) {
+        const { type, brand, model, color, hexCode, material } = result.data;
+        
+        toast.success("Análisis completado", {
+          description: `Detectado: ${type} para ${model} (${color})`
+        });
+
+        // 1. Buscar Tipo
+        if (type) {
+          const searchType = type.toLowerCase();
+          const foundType = productTypes.find(t => 
+            t.name.toLowerCase().includes(searchType) || 
+            searchType.includes("funda") && t.name.toLowerCase().includes("carcasa") ||
+            searchType.includes("carcasa") && t.name.toLowerCase().includes("funda")
+          );
+          if (foundType) form.setValue("typeId", foundType.id, { shouldValidate: true, shouldDirty: true });
+        }
+
+        // 2. Buscar/Sugerir Modelo
+        if (model) {
+          const foundModel = localPhoneModels.find(m => m.name.toLowerCase().includes(model.toLowerCase()));
+          if (foundModel) {
+            form.setValue("phoneModelId", foundModel.id);
+          } else {
+            setNewModel(prev => ({ ...prev, name: model }));
+            setIsModelDialogOpen(true);
+            toast.info(`El modelo "${model}" es nuevo. Confirma los datos para crearlo.`);
+            
+            // Auto-seleccionar marca basada en el campo 'brand' de la IA o adivinar
+            const autoSelectBrand = (data: any[]) => {
+              let foundBrand;
+              if (brand) {
+                foundBrand = data.find((b: any) => brand.toLowerCase().includes(b.name.toLowerCase()) || b.name.toLowerCase().includes(brand.toLowerCase()));
+              }
+              if (!foundBrand) {
+                foundBrand = data.find((b: any) => model.toLowerCase().includes(b.name.toLowerCase()));
+              }
+              if (foundBrand) setNewModel(prev => ({ ...prev, brandId: foundBrand.id }));
+            };
+
+            if (brands.length === 0) {
+              fetch("/api/brands").then(r => r.json()).then(data => {
+                setBrands(data);
+                autoSelectBrand(data);
+              });
+            } else {
+              autoSelectBrand(brands);
+            }
+          }
+        }
+
+        // 3. Buscar/Crear Automáticamente Color
+        if (color && hexCode) {
+          const foundColor = localColors.find(c => c.hexCode.toLowerCase() === hexCode.toLowerCase() || c.name.toLowerCase() === color.toLowerCase());
+          if (foundColor) {
+            form.setValue("colorId", foundColor.id);
+          } else {
+            try {
+              const res = await fetch("/api/colors", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: color, hexCode }),
+              });
+              if (res.ok) {
+                const created = await res.json();
+                setLocalColors(prev => [...prev, created]);
+                setTimeout(() => {
+                  form.setValue("colorId", created.id, { shouldValidate: true, shouldDirty: true });
+                }, 100);
+                toast.success(`Color "${color}" creado y asignado automáticamente.`);
+              }
+            } catch (e) {
+              setNewColor({ name: color, hexCode });
+              setIsColorDialogOpen(true);
+            }
+          }
+        }
+
+        // 4. Buscar Material
+        if (material) {
+          const foundMat = materials.find(m => m.name.toLowerCase().includes(material.toLowerCase()));
+          if (foundMat) form.setValue("materialId", foundMat.id);
+        }
+      } else {
+        toast.warning("No se pudo detectar todo automáticamente. Por favor, selecciona manualmente.");
+      }
+    } catch (error: any) {
+      console.error("AI Analysis Error:", error);
+      toast.warning("El análisis automático no está disponible ahora. Puedes continuar manualmente.");
+    } finally {
+      setIsAnalyzingIA(false);
+    }
   };
 
   const generateIAImage = async () => {
@@ -287,29 +408,71 @@ export function ProductForm({
     }
   };
 
-  const handleQuickAddSupplier = async () => {
-    if (!newSupplierName.trim()) return;
-    setIsAddingSupplier(true);
+
+  const handleQuickAddColor = async () => {
+    if (!newColor.name.trim()) return;
+    setIsAddingAttribute(true);
     try {
-      const res = await fetch("/api/providers", {
+      const res = await fetch("/api/colors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newSupplierName }),
+        body: JSON.stringify({ name: newColor.name, hexCode: newColor.hexCode }),
       });
       if (res.ok) {
         const created = await res.json();
-        setLocalSuppliers((prev) => [created, ...prev]);
-        form.setValue("supplierId", created.id);
-        setNewSupplierName("");
-        setIsSupplierDialogOpen(false);
-        toast.success("Proveedor añadido");
+        setLocalColors((prev) => [...prev, created]);
+        setTimeout(() => {
+          form.setValue("colorId", created.id, { shouldValidate: true, shouldDirty: true });
+        }, 100);
+        setIsColorDialogOpen(false);
+        toast.success("Color añadido");
       }
     } catch (error) {
-      console.error("Error creating supplier:", error);
+      toast.error("Error al crear color");
     } finally {
-      setIsAddingSupplier(false);
+      setIsAddingAttribute(false);
     }
   };
+
+  const handleQuickAddModel = async () => {
+    if (!newModel.name.trim() || !newModel.brandId) {
+      toast.error("Nombre y Marca son requeridos");
+      return;
+    }
+    setIsAddingAttribute(true);
+    try {
+      const res = await fetch("/api/phone-models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newModel.name, brandId: newModel.brandId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const createdModel = data.results?.created?.[0];
+        
+        if (createdModel) {
+          setLocalPhoneModels((prev) => [...prev, createdModel]);
+          setTimeout(() => {
+            form.setValue("phoneModelId", createdModel.id, { shouldValidate: true, shouldDirty: true });
+          }, 100);
+        }
+        setIsModelDialogOpen(false);
+        toast.success("Modelo añadido");
+      }
+    } catch (error) {
+      toast.error("Error al crear modelo");
+    } finally {
+      setIsAddingAttribute(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isModelDialogOpen && brands.length === 0) {
+      fetch("/api/brands").then(res => res.json()).then(setBrands);
+    }
+  }, [isModelDialogOpen]);
+
+  if (!mounted) return null;
 
   return (
     <div className="w-full max-w-4xl mx-auto py-2">
@@ -388,15 +551,25 @@ export function ProductForm({
                     </div>
                   )}
 
-                  <div className="absolute bottom-4 right-4">
+                  <div className="absolute bottom-4 right-4 flex gap-2">
                     <Button
                       type="button"
                       size="sm"
-                      className={cn("rounded-xl shadow-lg font-bold text-[10px] uppercase tracking-wider h-10 px-6", isGeneratingIA && "animate-pulse")}
+                      variant="secondary"
+                      className={cn("rounded-xl shadow-lg font-bold text-[10px] uppercase tracking-wider h-10 px-4", isAnalyzingIA && "animate-pulse")}
+                      onClick={analyzeIA}
+                      disabled={isAnalyzingIA || images.length === 0}
+                    >
+                      {isAnalyzingIA ? "Analizando..." : "IA Analizar Foto"}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className={cn("rounded-xl shadow-lg font-bold text-[10px] uppercase tracking-wider h-10 px-4", isGeneratingIA && "animate-pulse")}
                       onClick={generateIAImage}
                       disabled={isGeneratingIA || !phoneModelId || !typeId}
                     >
-                      {isGeneratingIA ? "Generando..." : "IA Generar"}
+                      {isGeneratingIA ? "Generando..." : "IA Mejorar"}
                     </Button>
                   </div>
                 </Card>
@@ -414,21 +587,24 @@ export function ProductForm({
                     name="phoneModelId"
                     render={({ field }) => (
                       <FormItem className="space-y-1">
-                        <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Modelo</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="h-11 rounded-xl bg-background border-2 transition-all hover:border-primary/30">
-                              <SelectValue placeholder="Modelo..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="rounded-xl shadow-xl">
-                            {phoneModels.map((model) => (
-                              <SelectItem key={model.id} value={model.id} className="h-10 text-sm">
-                                {model.name} <span className="text-[10px] opacity-40 ml-2">({model.brand?.name})</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          <div className="flex items-center justify-between px-1">
+                            <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Modelo</FormLabel>
+                            <Button type="button" variant="link" className="h-auto p-0 text-[10px] font-bold" onClick={() => setIsModelDialogOpen(true)}>+ Nuevo</Button>
+                          </div>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="h-11 rounded-xl bg-background border-2 transition-all hover:border-primary/30">
+                                <SelectValue placeholder="Modelo..." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="rounded-xl shadow-xl">
+                              {localPhoneModels.map((model) => (
+                                <SelectItem key={model.id} value={model.id} className="h-10 text-sm">
+                                  {model.name} <span className="text-[10px] opacity-40 ml-2">({model.brand?.name})</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -462,30 +638,33 @@ export function ProductForm({
                       control={form.control}
                       name="colorId"
                       render={({ field }) => {
-                        const sc = colors.find((c) => c.id === field.value);
+                        const sc = localColors.find((c) => c.id === field.value);
                         return (
                           <FormItem className="space-y-1">
+                          <div className="flex items-center justify-between px-1">
                             <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Color</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger className="h-11 rounded-xl bg-background border-2 px-3">
+                            <Button type="button" variant="link" className="h-auto p-0 text-[10px] font-bold" onClick={() => setIsColorDialogOpen(true)}>+ Nuevo</Button>
+                          </div>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="h-11 rounded-xl bg-background border-2 px-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: sc?.hexCode || "transparent" }} />
+                                  <span className="text-xs truncate">{sc?.name || "Ver"}</span>
+                                </div>
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="rounded-xl">
+                              {localColors.map((color) => (
+                                <SelectItem key={color.id} value={color.id} className="h-10">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: sc?.hexCode || "transparent" }} />
-                                    <span className="text-xs truncate">{sc?.name || "Ver"}</span>
+                                    <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: color.hexCode }} />
+                                    <span className="text-xs">{color.name}</span>
                                   </div>
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="rounded-xl">
-                                {colors.map((color) => (
-                                  <SelectItem key={color.id} value={color.id} className="h-10">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: color.hexCode }} />
-                                      <span className="text-xs">{color.name}</span>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           </FormItem>
                         );
                       }}
@@ -525,75 +704,36 @@ export function ProductForm({
             <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="bg-muted/10 p-6 rounded-2xl space-y-6">
-                  <div className="flex items-center gap-2 text-primary border-b pb-3"><Truck className="h-5 w-5" /><h3 className="font-bold text-sm uppercase">Stock</h3></div>
+                  <div className="flex items-center gap-2 text-primary border-b pb-3"><Truck className="h-5 w-5" /><h3 className="font-bold text-sm uppercase">Alertas de Stock</h3></div>
                   <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="supplierId"
-                      render={({ field }) => (
-                        <FormItem className="space-y-1">
-                          <div className="flex items-center justify-between px-1">
-                            <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground">Proveedor</FormLabel>
-                            <Button type="button" variant="link" className="h-auto p-0 text-[10px] font-bold" onClick={() => setIsSupplierDialogOpen(true)}>+ Añadir</Button>
-                          </div>
-                          <Select onValueChange={(val) => field.onChange(val === "unselected" ? null : val)} value={field.value || "unselected"}>
-                            <FormControl><SelectTrigger className="h-11 rounded-xl border-2"><SelectValue placeholder="Seleccionar..." /></SelectTrigger></FormControl>
-                            <SelectContent className="rounded-xl">
-                              <SelectItem value="unselected" className="opacity-40 italic">Ninguno</SelectItem>
-                              {localSuppliers.map((s) => (<SelectItem key={s.id} value={s.id} className="text-sm">{s.name}</SelectItem>))}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="stock" render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-[10px] font-bold uppercase text-primary">Unidades Nuevas</FormLabel>
-                            <FormControl>
-                              <Input type="number" {...field} className="h-12 rounded-xl text-center font-bold text-lg border-primary/20" onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
-                            </FormControl>
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="stockDamaged" render={({ field }) => (
-                          <FormItem className="space-y-1">
-                            <FormLabel className="text-[10px] font-bold uppercase text-orange-600">Unidades Dañadas</FormLabel>
-                            <FormControl>
-                              <Input type="number" {...field} className="h-12 rounded-xl text-center font-bold text-lg border-orange-200 bg-orange-50/30" onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
-                            </FormControl>
-                          </FormItem>
-                        )} />
-                      </div>
-                      <FormField control={form.control} name="minStock" render={({ field }) => (
-                        <FormItem className="space-y-1">
-                          <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground">Alerta Stock Mínimo</FormLabel>
-                          <FormControl>
-                            <Input type="number" {...field} className="h-10 rounded-lg text-center" onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
-                          </FormControl>
-                        </FormItem>
-                      )} />
-                    </div>
+                    <FormField control={form.control} name="minStock" render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="text-[10px] font-bold uppercase text-muted-foreground">Stock Mínimo (Alerta)</FormLabel>
+                        <FormControl>
+                          <Input type="number" {...field} className="h-12 rounded-xl text-center font-bold" onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                        </FormControl>
+                        <p className="text-[9px] text-muted-foreground italic px-1">Te avisaremos cuando el inventario caiga por debajo de este número.</p>
+                      </FormItem>
+                    )} />
                   </div>
                 </Card>
 
                 <Card className="bg-primary/[0.03] p-6 rounded-2xl space-y-6 border border-primary/10">
-                  <div className="flex items-center gap-2 text-primary border-b border-primary/10 pb-3"><Banknote className="h-5 w-5" /><h3 className="font-bold text-sm uppercase">Costos e Inventario Interno</h3></div>
-                  <div className="space-y-4">
-                    <FormField control={form.control} name="costPrice" render={({ field }) => (
+                  <div className="flex items-center gap-2 text-primary border-b border-primary/10 pb-3"><Banknote className="h-5 w-5" /><h3 className="font-bold text-sm uppercase">Precios de Venta (Opcional)</h3></div>
+                  <div className="space-y-4 grid grid-cols-2 gap-4">
+                    <FormField control={form.control} name="priceRetail" render={({ field }) => (
                       <FormItem className="space-y-1">
-                        <FormLabel className="text-[10px] font-bold uppercase text-primary">Costo del Producto (Bs)</FormLabel>
+                        <FormLabel className="text-[10px] font-bold uppercase text-primary">Precio Detal (Bs)</FormLabel>
                         <FormControl>
-                          <div className="relative">
-                            <Input 
-                              type="number" 
-                              step="0.01" 
-                              {...field} 
-                              className="h-12 rounded-xl font-bold text-lg pr-12" 
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} 
-                            />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">Bs</span>
-                          </div>
+                          <Input type="number" step="0.01" {...field} value={field.value || ""} className="h-12 rounded-xl font-bold text-center" onChange={(e) => field.onChange(parseFloat(e.target.value) || null)} />
+                        </FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="priceWholesale" render={({ field }) => (
+                      <FormItem className="space-y-1">
+                        <FormLabel className="text-[10px] font-bold uppercase text-primary">Precio Mayor (Bs)</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" {...field} value={field.value || ""} className="h-12 rounded-xl font-bold text-center" onChange={(e) => field.onChange(parseFloat(e.target.value) || null)} />
                         </FormControl>
                       </FormItem>
                     )} />
@@ -659,17 +799,48 @@ export function ProductForm({
         </form>
       </Form>
 
-      {/* Dialog Proveedor Compacto */}
-      <Dialog open={isSupplierDialogOpen} onOpenChange={setIsSupplierDialogOpen}>
+
+      {/* Dialog Color */}
+      <Dialog open={isColorDialogOpen} onOpenChange={setIsColorDialogOpen}>
         <DialogContent className="sm:max-w-[400px] p-8 rounded-2xl border-none shadow-2xl">
-          <DialogHeader><DialogTitle className="text-xl font-bold uppercase italic text-primary">Nuevo Proveedor</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase italic text-primary">Nuevo Color</DialogTitle></DialogHeader>
           <div className="py-6 space-y-4">
             <div className="space-y-1">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Nombre</Label>
-              <Input value={newSupplierName} onChange={(e) => setNewSupplierName(e.target.value)} placeholder="Ej: Mayorista X" className="h-11 rounded-xl font-bold text-sm" />
+              <Input value={newColor.name} onChange={(e) => setNewColor(prev => ({...prev, name: e.target.value}))} placeholder="Ej: Azul Medianoche" className="h-11 rounded-xl font-bold text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Color (Hex)</Label>
+              <div className="flex gap-2">
+                <Input type="color" value={newColor.hexCode} onChange={(e) => setNewColor(prev => ({...prev, hexCode: e.target.value}))} className="w-12 h-11 p-1 rounded-lg" />
+                <Input value={newColor.hexCode} onChange={(e) => setNewColor(prev => ({...prev, hexCode: e.target.value}))} className="flex-1 h-11 rounded-xl font-mono text-sm" />
+              </div>
             </div>
           </div>
-          <DialogFooter><Button type="button" onClick={handleQuickAddSupplier} disabled={isAddingSupplier || !newSupplierName.trim()} className="w-full h-11 rounded-xl font-bold uppercase tracking-wider">Confirmar</Button></DialogFooter>
+          <DialogFooter><Button type="button" onClick={handleQuickAddColor} disabled={isAddingAttribute || !newColor.name.trim()} className="w-full h-11 rounded-xl font-bold uppercase tracking-wider">Añadir Color</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Modelo */}
+      <Dialog open={isModelDialogOpen} onOpenChange={setIsModelDialogOpen}>
+        <DialogContent className="sm:max-w-[400px] p-8 rounded-2xl border-none shadow-2xl">
+          <DialogHeader><DialogTitle className="text-xl font-bold uppercase italic text-primary">Nuevo Modelo</DialogTitle></DialogHeader>
+          <div className="py-6 space-y-4">
+            <div className="space-y-1">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Nombre del Modelo</Label>
+              <Input value={newModel.name} onChange={(e) => setNewModel(prev => ({...prev, name: e.target.value}))} placeholder="Ej: iPhone 15 Pro Max" className="h-11 rounded-xl font-bold text-sm" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">Marca</Label>
+              <Select onValueChange={(val) => setNewModel(prev => ({...prev, brandId: val}))} value={newModel.brandId}>
+                <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Elegir marca..." /></SelectTrigger>
+                <SelectContent>
+                  {brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter><Button type="button" onClick={handleQuickAddModel} disabled={isAddingAttribute || !newModel.name.trim() || !newModel.brandId} className="w-full h-11 rounded-xl font-bold uppercase tracking-wider">Añadir Modelo</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

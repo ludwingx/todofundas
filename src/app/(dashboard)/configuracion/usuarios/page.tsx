@@ -6,7 +6,8 @@ import { getUsersAction } from '@/app/actions/users'
 export default async function UsuariosPage() {
   const session = await getSession()
   
-  if (!session || session.role !== 'admin') {
+  const isAdmin = session?.role === 'admin' || session?.role === 'admin2'
+  if (!session || !isAdmin) {
     redirect('/dashboard') // Only admins can access this page
   }
 

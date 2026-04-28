@@ -14,7 +14,6 @@ import NewProductClient from "./NewProductClient";
 
 interface RegisterProductDialogProps {
   productTypes: any[];
-  suppliers: any[];
   phoneModels: any[];
   colors: any[];
   materials: any[];
@@ -23,7 +22,6 @@ interface RegisterProductDialogProps {
 
 export function RegisterProductDialog({
   productTypes,
-  suppliers,
   phoneModels,
   colors,
   materials,
@@ -48,7 +46,6 @@ export function RegisterProductDialog({
         <div className="flex-1 overflow-y-auto pr-1">
           <NewProductClient
             productTypes={productTypes}
-            suppliers={suppliers}
             phoneModels={phoneModels}
             colors={colors}
             materials={materials}

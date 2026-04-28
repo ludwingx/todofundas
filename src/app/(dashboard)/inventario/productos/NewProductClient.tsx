@@ -5,7 +5,6 @@ import { ProductForm, ProductFormData } from "@/components/product-form";
 
 export default function NewProductClient({
   productTypes,
-  suppliers,
   phoneModels: initialPhoneModels,
   colors: initialColors,
   materials,
@@ -13,7 +12,6 @@ export default function NewProductClient({
   onSuccess,
 }: {
   productTypes: { id: string; name: string }[];
-  suppliers: { id: string; name: string }[];
   phoneModels: { id: string; name: string; brand?: { name: string } }[];
   colors: { id: string; name: string; hexCode: string }[];
   materials: { id: string; name: string }[];
@@ -85,7 +83,6 @@ export default function NewProductClient({
   return (
     <ProductForm
       productTypes={productTypes}
-      suppliers={suppliers}
       phoneModels={phoneModels}
       colors={colors}
       materials={materials}

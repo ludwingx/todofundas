@@ -171,10 +171,11 @@ export default async function PurchasesPage() {
                       <tr>
                         <th className="p-3 font-medium">Fecha</th>
                         <th className="p-3 font-medium">Proveedor</th>
+                        <th className="p-3 font-medium">Cant. Pedida</th>
+                        <th className="p-3 font-medium">Cant. Recibida</th>
                         <th className="p-3 font-medium">Monto Total</th>
                         <th className="p-3 font-medium">Estado</th>
-                        <th className="p-3 font-medium">Items</th>
-                        <th className="p-3 font-medium text-right">Acción</th>
+                        <th className="p-3 font-medium text-right">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -184,6 +185,19 @@ export default async function PurchasesPage() {
                             {new Date(purchase.createdAt).toLocaleDateString()}
                           </td>
                           <td className="p-3 font-medium">{purchase.supplier?.name || "Desconocido"}</td>
+                          <td className="p-3">
+                            <Badge variant="outline">{purchase.items.reduce((sum, i) => sum + i.quantityOrdered, 0)}</Badge>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex gap-1.5">
+                              <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+                                {purchase.items.reduce((sum, i) => sum + i.quantityGood, 0)}
+                              </Badge>
+                              <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">
+                                {purchase.items.reduce((sum, i) => sum + i.quantityDamaged, 0)}
+                              </Badge>
+                            </div>
+                          </td>
                           <td className="p-3">Bs. {purchase.totalAmount.toFixed(2)}</td>
                           <td className="p-3">
                             <Badge variant={
@@ -193,19 +207,30 @@ export default async function PurchasesPage() {
                               {purchase.status}
                             </Badge>
                           </td>
-                          <td className="p-3 text-muted-foreground">{purchase.items.length} productos</td>
                           <td className="p-3 text-right">
                             {purchase.status === "pendiente" ? (
                               <Link href={`/compras/${purchase.id}/recibir`}>
-                                <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
+                                <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white cursor-pointer">
                                   <ClipboardCheck className="w-4 h-4 mr-1" />
-                                  Recibir y Revisar
+                                  Recibir
                                 </Button>
                               </Link>
                             ) : (
-                              <Button size="sm" variant="outline" disabled>
-                                Completado
-                              </Button>
+                              <div className="flex justify-end gap-2">
+                                {purchase.items.some(item => !item.productId && (item.quantityGood > 0 || item.quantityDamaged > 0)) && (
+                                  <Link href={`/compras/${purchase.id}/asignar`}>
+                                    <Button size="sm" variant="default" className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer">
+                                      <Package className="w-4 h-4 mr-1" />
+                                      Asignar
+                                    </Button>
+                                  </Link>
+                                )}
+                                <Link href={`/compras/${purchase.id}`}>
+                                  <Button size="sm" variant="outline" className="cursor-pointer">
+                                    Administrar
+                                  </Button>
+                                </Link>
+                              </div>
                             )}
                           </td>
                         </tr>

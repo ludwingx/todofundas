@@ -84,6 +84,13 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
   const [newPassword, setNewPassword] = useState('')
   const [newRole, setNewRole] = useState('user')
 
+  // Edit User State
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editRole, setEditRole] = useState('')
+  const [editPassword, setEditPassword] = useState('')
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -103,6 +110,35 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
       toast({ title: "Error", description: result.error, variant: "destructive" })
     }
     setIsSubmitting(false)
+  }
+
+  const handleEditUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingUser) return
+
+    setIsSubmitting(true)
+    const result = await updateUserAction(editingUser.id, {
+      name: editName,
+      role: editRole,
+      password: editPassword || undefined
+    })
+
+    if (result.success) {
+      toast({ title: "Usuario actualizado exitosamente" })
+      setIsEditOpen(false)
+      window.location.reload()
+    } else {
+      toast({ title: "Error", description: result.error, variant: "destructive" })
+    }
+    setIsSubmitting(false)
+  }
+
+  const openEditDialog = (user: User) => {
+    setEditingUser(user)
+    setEditName(user.name)
+    setEditRole(user.role)
+    setEditPassword('')
+    setIsEditOpen(true)
   }
 
   const handleToggleActive = async (user: User) => {
@@ -189,6 +225,63 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                 </div>
                 <Button type="submit" className="w-full h-11" disabled={isSubmitting}>
                   {isSubmitting ? 'Procesando...' : 'Registrar Usuario'}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold">Editar Usuario</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleEditUser} className="space-y-5 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Nombre Completo</Label>
+                  <Input 
+                    id="edit-name" 
+                    placeholder="Ej: Juan Pérez" 
+                    value={editName} 
+                    onChange={e => setEditName(e.target.value)} 
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-username">Usuario de Acceso</Label>
+                  <Input 
+                    id="edit-username" 
+                    value={editingUser?.username || ''} 
+                    disabled 
+                    className="bg-muted"
+                  />
+                  <p className="text-[10px] text-muted-foreground">El nombre de usuario no puede ser cambiado.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-password">Nueva Contraseña (opcional)</Label>
+                  <Input 
+                    id="edit-password" 
+                    type="password" 
+                    placeholder="Dejar en blanco para mantener actual"
+                    value={editPassword} 
+                    onChange={e => setEditPassword(e.target.value)} 
+                    minLength={6} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Rol en el Sistema</Label>
+                  <Select value={editRole} onValueChange={setEditRole}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">Vendedor / Usuario</SelectItem>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="admin2">Administrador Master</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="submit" className="w-full h-11" disabled={isSubmitting}>
+                  {isSubmitting ? 'Actualizando...' : 'Guardar Cambios'}
                 </Button>
               </form>
             </DialogContent>
@@ -313,10 +406,16 @@ export function UsersClient({ initialUsers }: { initialUsers: User[] }) {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="cursor-pointer">
+                           <DropdownMenuItem 
+                            className="cursor-pointer"
+                            onClick={() => openEditDialog(user)}
+                          >
                             <Edit2 className="mr-2 h-4 w-4" /> Editar Perfil
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer text-destructive">
+                          <DropdownMenuItem 
+                            className="cursor-pointer text-destructive focus:text-destructive"
+                            onClick={() => openEditDialog(user)}
+                          >
                             <ShieldAlert className="mr-2 h-4 w-4" /> Restablecer Contraseña
                           </DropdownMenuItem>
                         </DropdownMenuContent>

@@ -146,3 +146,82 @@ export async function generateNewProductImage(
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Analiza una imagen para detectar atributos del producto
+ */
+export async function analyzeProductImage(
+  base64Image: string
+): Promise<AIActionResult<{
+  type?: string;
+  brand?: string;
+  model?: string;
+  color?: string;
+  hexCode?: string;
+  material?: string;
+}>> {
+  const apiKey = getApiKey();
+  if (!apiKey) return { success: false, error: "OPEN_ROUTER_KEY no configurada" };
+
+  try {
+    const uploadResult = await uploadToOBFiles(base64Image.split(",")[1], `analyze_${Date.now()}.png`, "image/png");
+    if (!uploadResult.success || !uploadResult.url) {
+      return { success: false, error: "Error subiendo imagen temporal" };
+    }
+
+    const res = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://todofundas.com",
+        "X-Title": "TodoFundas",
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-4o-mini",
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "user",
+            content: [
+              { 
+                type: "text", 
+                text: `Analiza esta imagen de un accesorio para celular y devuelve un objeto JSON estructurado.
+                
+                CAMPOS REQUERIDOS:
+                - type: El tipo de producto (ej: "Funda", "Protector de pantalla", "Cargador").
+                - brand: La marca del celular (ej: "Apple", "Samsung", "Xiaomi").
+                - model: El modelo de celular SIN la marca (ej: "15 Pro Max", "S24 Ultra", "Redmi Note 12"). 
+                - color: Nombre del color en español (ej: "Verde Esmeralda", "Gris Espacial").
+                - hexCode: El código hexadecimal exacto del color (ej: "#2E4739").
+                - material: El material predominante (ej: "Silicona", "Cuero", "PC Rígido").
+                
+                REGLAS:
+                1. Responde ÚNICAMENTE con el objeto JSON.
+                2. No incluyas bloques de código markdown (\`\`\`json).
+                3. El campo 'model' NO debe incluir la marca, solo el número/nombre del modelo.` 
+              },
+              { type: "image_url", image_url: { url: uploadResult.url } },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      return { success: false, error: `Error en análisis: ${err}` };
+    }
+
+    const data = await res.json();
+    const content = data.choices?.[0]?.message?.content;
+    
+    if (!content) return { success: false, error: "La IA no devolvió análisis" };
+
+    const parsed = JSON.parse(content.replace(/```json|```/g, "").trim());
+    return { success: true, data: parsed };
+  } catch (error: any) {
+    console.error("Error analyzing image:", error);
+    return { success: false, error: error.message };
+  }
+}

@@ -27,7 +27,7 @@ export async function PUT(
     );
 
     // Validación de campos requeridos
-    const requiredFields = ["phoneModelId", "typeId", "priceRetail"];
+    const requiredFields = ["phoneModelId", "typeId"];
     const missingFields = requiredFields.filter(
       (field) => !data[field] && data[field] !== 0
     );
@@ -115,19 +115,16 @@ export async function PUT(
     const updateData: any = {
       phoneModelId: String(data.phoneModelId),
       typeId: String(data.typeId),
-      supplierId: data.supplierId ? String(data.supplierId) : null,
       colorId: data.colorId ? String(data.colorId) : undefined,
       materialId: data.materialId && data.materialId !== "" ? String(data.materialId) : null,
-      stock: Number(data.stock) || 0,
       minStock: data.minStock !== undefined ? Number(data.minStock) : 0,
-      priceRetail: Number(data.priceRetail) || 0,
-      priceWholesale: data.priceWholesale ? Number(data.priceWholesale) : 0,
-      costPrice: data.costPrice ? Number(data.costPrice) : 0,
+      priceRetail: data.priceRetail && data.priceRetail !== "null" ? Number(data.priceRetail) : null,
+      priceWholesale: data.priceWholesale && data.priceWholesale !== "null" ? Number(data.priceWholesale) : null,
       isPublic: data.isPublic === "true" || data.isPublic === true,
       publicPrice: data.publicPrice && data.publicPrice !== "null" ? Number(data.publicPrice) : null,
       hasDiscount: data.hasDiscount === "true" || data.hasDiscount === true,
-      discountPercentage: data.discountPercentage ? Number(data.discountPercentage) : null,
-      discountPrice: data.discountPrice ? Number(data.discountPrice) : null,
+      discountPercentage: data.discountPercentage && data.discountPercentage !== "null" ? Number(data.discountPercentage) : null,
+      discountPrice: data.discountPrice && data.discountPrice !== "null" ? Number(data.discountPrice) : null,
       imageUrl: primaryImageUrl,
     };
 

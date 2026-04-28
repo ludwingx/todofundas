@@ -97,14 +97,12 @@ export default async function ProductsPage() {
   // Obtener tipos, proveedores, modelos, colores, materiales y compatibilidades
   const [
     productTypes,
-    suppliers,
     phoneModels,
     colors,
     materials,
     compatibilities,
   ] = await Promise.all([
     prisma.productType.findMany({ select: { id: true, name: true } }),
-    prisma.supplier.findMany({ select: { id: true, name: true } }),
     prisma.phoneModel.findMany({ 
       select: { 
         id: true, 
@@ -185,7 +183,6 @@ export default async function ProductsPage() {
               </Button>
               <RegisterProductDialog
                 productTypes={productTypes}
-                suppliers={suppliers}
                 phoneModels={phoneModels}
                 colors={colors}
                 materials={materials}
@@ -218,7 +215,7 @@ export default async function ProductsPage() {
                   <TableHead className="text-red-600 hidden md:table-cell">Dañados</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Precio</TableHead>
-                  <TableHead>Proveedor</TableHead>
+                  <TableHead>Precio</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -313,12 +310,6 @@ export default async function ProductsPage() {
                           ? product.priceRetail.toFixed(2)
                           : "0.00"}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {!product.supplier ||
-                        product.supplier.status === "deleted"
-                          ? "Sin Proveedor"
-                          : product.supplier.name || "Sin Proveedor"}
-                      </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-2 shrink-0">
                           <ProductDamageDialog
@@ -341,7 +332,6 @@ export default async function ProductsPage() {
                           <ProductEditDialog
                             product={product}
                             productTypes={productTypes}
-                            suppliers={suppliers}
                             phoneModels={phoneModels}
                             colors={colors}
                             materials={materials}

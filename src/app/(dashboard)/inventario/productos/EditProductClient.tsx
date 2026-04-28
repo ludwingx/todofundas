@@ -9,15 +9,11 @@ type ProductData = {
   id: string;
   phoneModelId: string;
   typeId: string;
-  supplierId: string | null;
   color: { id: string; name: string; hexCode: string };
   material?: { id: string; name: string } | null;
-  stock: number;
-  stockDamaged: number;
   minStock: number;
   priceRetail?: number | null;
   priceWholesale?: number | null;
-  costPrice: number;
   hasDiscount?: boolean;
   discountPercentage?: number | null;
   discountPrice?: number | null;
@@ -28,7 +24,6 @@ type ProductData = {
 export default function EditProductClient({
   product,
   productTypes,
-  suppliers,
   phoneModels,
   colors,
   materials,
@@ -37,7 +32,6 @@ export default function EditProductClient({
 }: {
   product: ProductData;
   productTypes: BasicRef[];
-  suppliers: BasicRef[];
   phoneModels: { id: string; name: string; brand?: { name: string } }[];
   colors: { id: string; name: string; hexCode: string }[];
   materials: { id: string; name: string }[];
@@ -132,7 +126,6 @@ export default function EditProductClient({
     <ProductForm
       product={productForForm}
       productTypes={productTypes}
-      suppliers={suppliers}
       phoneModels={phoneModels}
       colors={colors}
       materials={materials}

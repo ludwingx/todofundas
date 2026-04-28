@@ -14,7 +14,6 @@ export async function GET() {
       include: {
         phoneModel: true,
         type: true,
-        supplier: true,
         color: { select: { id: true, name: true, hexCode: true } },
         material: { select: { id: true, name: true } },
         images: true,
@@ -85,11 +84,7 @@ export async function POST(req: NextRequest) {
     if (
       !data.phoneModelId ||
       !data.typeId ||
-      !data.colorId ||
-      data.stock === undefined ||
-      data.stock === null ||
-      data.priceRetail === undefined ||
-      data.priceRetail === null
+      !data.colorId
     ) {
       return NextResponse.json(
         { error: "Faltan campos obligatorios", body: data },
@@ -101,18 +96,14 @@ export async function POST(req: NextRequest) {
       data: {
         phoneModelId: String(data.phoneModelId),
         typeId: String(data.typeId),
-        supplierId: data.supplierId ? String(data.supplierId) : null,
         colorId: String(data.colorId),
         materialId: data.materialId ? String(data.materialId) : null,
-        stock: Number(data.stock),
-        stockDamaged: Number(data.stockDamaged || 0),
         minStock:
           data.minStock !== undefined && data.minStock !== null
             ? Number(data.minStock)
             : 5,
         priceRetail: data.priceRetail ? Number(data.priceRetail) : null,
         priceWholesale: data.priceWholesale ? Number(data.priceWholesale) : null,
-        costPrice: Number(data.costPrice),
         isPublic: data.isPublic === "true" || data.isPublic === true,
         publicPrice: data.publicPrice ? Number(data.publicPrice) : null,
         hasDiscount: data.hasDiscount === "true" || data.hasDiscount === true,
@@ -129,52 +120,6 @@ export async function POST(req: NextRequest) {
         images: true
       }
     });
-
-    // REGISTRAR MOVIMIENTO DE INVENTARIO PARA STOCK INICIAL
-    const session = await (await import("@/app/actions/auth")).getSession();
-    const userId = session?.userId as string || "";
-
-    if (Number(data.stock) > 0) {
-      await prisma.inventoryMovement.create({
-        data: {
-          productId: product.id,
-          type: 'entrada',
-          quantity: Number(data.stock),
-          reason: 'Registro Inicial (Nuevo)',
-          notes: 'Stock inicial al crear el producto',
-          userId
-        }
-      });
-    }
-
-    if (Number(data.stockDamaged) > 0) {
-      await prisma.inventoryMovement.create({
-        data: {
-          productId: product.id,
-          type: 'entrada',
-          quantity: Number(data.stockDamaged),
-          reason: 'Registro Inicial (Dañado)',
-          notes: 'Stock dañado inicial al crear el producto',
-          userId
-        }
-      });
-    }
-
-    // REGISTRAR EGRESO EN WALLET (INVERSIÓN INICIAL EN PRODUCTO)
-    const totalInitialInvestment = (Number(data.stock) + Number(data.stockDamaged || 0)) * Number(data.costPrice);
-    if (totalInitialInvestment > 0) {
-      await prisma.walletTransaction.create({
-        data: {
-          type: 'egreso',
-          amount: totalInitialInvestment,
-          reason: 'Carga Inicial de Inventario',
-          notes: `Inversión inicial para: ${product.id.slice(0,8)} (Stock: ${data.stock} / Dañado: ${data.stockDamaged || 0})`,
-          referenceId: product.id,
-          referenceType: 'Product',
-          userId
-        }
-      });
-    }
 
     return NextResponse.json({ success: true, productId: product.id });
   } catch (error) {
