@@ -27,6 +27,7 @@ import {
   ClipboardCheck
 } from "lucide-react"
 import Link from "next/link"
+import PurchaseActions from "./components/PurchaseActions"
 
 export default async function PurchasesPage() {
   const session = await getSession()
@@ -207,10 +208,10 @@ export default async function PurchasesPage() {
                               {purchase.status}
                             </Badge>
                           </td>
-                          <td className="p-3 text-right">
+                          <td className="p-3 text-right flex items-center justify-end gap-2">
                             {purchase.status === "pendiente" ? (
                               <Link href={`/compras/${purchase.id}/recibir`}>
-                                <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white cursor-pointer">
+                                <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white cursor-pointer h-8">
                                   <ClipboardCheck className="w-4 h-4 mr-1" />
                                   Recibir
                                 </Button>
@@ -219,19 +220,15 @@ export default async function PurchasesPage() {
                               <div className="flex justify-end gap-2">
                                 {purchase.items.some(item => !item.productId && (item.quantityGood > 0 || item.quantityDamaged > 0)) && (
                                   <Link href={`/compras/${purchase.id}/asignar`}>
-                                    <Button size="sm" variant="default" className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer">
+                                    <Button size="sm" variant="default" className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer h-8">
                                       <Package className="w-4 h-4 mr-1" />
                                       Asignar
                                     </Button>
                                   </Link>
                                 )}
-                                <Link href={`/compras/${purchase.id}`}>
-                                  <Button size="sm" variant="outline" className="cursor-pointer">
-                                    Administrar
-                                  </Button>
-                                </Link>
                               </div>
                             )}
+                            <PurchaseActions purchaseId={purchase.id} status={purchase.status} />
                           </td>
                         </tr>
                       ))}

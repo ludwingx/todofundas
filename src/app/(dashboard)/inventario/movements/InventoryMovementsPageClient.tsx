@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pencil, Trash2, Save, X, Search, Plus } from "lucide-react";
+import { Pencil, Trash2, Save, X, Search, Plus, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -42,6 +42,8 @@ export default function InventoryMovementsPageClient() {
     notes: ""
   });
   const requestInProgress = useRef(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
 
   useEffect(() => {
     fetch("/api/products")
@@ -262,6 +264,17 @@ export default function InventoryMovementsPageClient() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => {
+                              setSelectedMovement(m);
+                              setDetailsDialogOpen(true);
+                            }}
+                            className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleDelete(m.id)}
                             className="h-9 w-9 text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
@@ -277,6 +290,61 @@ export default function InventoryMovementsPageClient() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Detalle del Movimiento</DialogTitle>
+          </DialogHeader>
+          {selectedMovement && (
+            <div className="space-y-4 text-sm mt-4">
+              <div className="grid grid-cols-2 gap-y-3 gap-x-2">
+                <div className="font-semibold text-muted-foreground">ID Interno:</div>
+                <div className="truncate text-xs" title={selectedMovement.id}>{selectedMovement.id}</div>
+                
+                <div className="font-semibold text-muted-foreground">Tipo:</div>
+                <div className="uppercase font-bold">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                    selectedMovement.type === 'entrada' ? 'bg-green-100 text-green-700' :
+                    selectedMovement.type === 'salida' ? 'bg-red-100 text-red-700' :
+                    'bg-blue-100 text-blue-700'
+                  }`}>
+                    {selectedMovement.type}
+                  </span>
+                </div>
+                
+                <div className="font-semibold text-muted-foreground">Cantidad:</div>
+                <div className="font-bold text-lg">{selectedMovement.quantity}</div>
+                
+                <div className="font-semibold text-muted-foreground">Motivo:</div>
+                <div>{selectedMovement.reason}</div>
+                
+                <div className="font-semibold text-muted-foreground">Fecha:</div>
+                <div>{new Date(selectedMovement.createdAt).toLocaleString()}</div>
+              </div>
+              
+              <div className="border-t pt-3 mt-3">
+                <div className="font-semibold text-muted-foreground mb-2">Producto Afectado:</div>
+                {selectedMovement.product ? (
+                  <div className="bg-muted/50 p-3 rounded-lg border">
+                    <div className="font-bold">{selectedMovement.product.type.name} {selectedMovement.product.phoneModel.name}</div>
+                    <div className="text-muted-foreground text-xs">{selectedMovement.product.color?.name || 'Sin color'}</div>
+                  </div>
+                ) : (
+                  <div className="text-xs">{selectedMovement.productId}</div>
+                )}
+              </div>
+
+              <div className="border-t pt-3 mt-3">
+                <div className="font-semibold text-muted-foreground mb-2">Notas / Detalles:</div>
+                <div className="bg-muted p-3 rounded-lg whitespace-pre-wrap text-sm italic">
+                  {selectedMovement.notes || "Sin notas adicionales registradas."}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

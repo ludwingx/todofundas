@@ -163,7 +163,7 @@ export default async function InventoryPage() {
                           key={activity.id}
                           title={activity.title}
                           description={activity.description}
-                          timestamp={activity.timestamp}
+                          timestamp={activity.date}
                           icon={activity.type === 'entrada' ? Plus : activity.type === 'venta' ? TrendingDown : AlertTriangle}
                           iconColor={activity.type === 'entrada' ? 'text-green-600' : activity.type === 'venta' ? 'text-blue-600' : 'text-orange-600'}
                         />

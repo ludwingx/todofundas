@@ -5,7 +5,16 @@ import prisma from '@/lib/prisma'
 export async function GET() {
   const movements = await prisma.inventoryMovement.findMany({
     orderBy: { createdAt: 'desc' },
-    include: { product: true, user: true }
+    include: { 
+      product: {
+        include: {
+          type: true,
+          phoneModel: true,
+          color: true
+        }
+      }, 
+      user: true 
+    }
   })
   return NextResponse.json(movements)
 }

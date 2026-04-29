@@ -11,6 +11,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
@@ -31,7 +37,7 @@ export default async function SalesPage() {
   const endOfTodayDate = endOfDay(today)
   const startOfThisMonth = startOfMonth(today)
 
-  // 1. Fetch Today's Sales
+  // 1. Fetch Today's Sales con color del producto
   const todaySales = await db.sale.findMany({
     where: {
       createdAt: {
@@ -41,7 +47,7 @@ export default async function SalesPage() {
     },
     include: {
       product: {
-        include: { type: true, phoneModel: true }
+        include: { type: true, phoneModel: true, color: true }
       }
     },
     orderBy: { createdAt: 'desc' }
@@ -58,8 +64,8 @@ export default async function SalesPage() {
   // Calculate Metrics
   const ventasHoy = todaySales.reduce((sum, sale) => sum + sale.totalPrice, 0)
   
-  // Since each sold item is an individual Sale record, we group by exact timestamp to estimate distinct "tickets/transactions"
-  const uniqueTransactions = new Set(todaySales.map(s => s.createdAt.getTime())).size
+  // Agrupar por transactionId para contar tickets reales del día
+  const uniqueTransactions = new Set(todaySales.map(s => s.transactionId || s.id)).size
   const transaccionesHoy = uniqueTransactions
   const ticketPromedio = transaccionesHoy > 0 ? ventasHoy / transaccionesHoy : 0
   
@@ -81,6 +87,30 @@ export default async function SalesPage() {
     productSales[sale.productId].quantity += sale.quantity
   })
   const topProducts = Object.values(productSales).sort((a, b) => b.quantity - a.quantity).slice(0, 3)
+
+  // Agrupar ventas por transactionId (cada carrito tiene el mismo UUID)
+  const groupedSales: Record<string, typeof todaySales> = {}
+  todaySales.forEach(sale => {
+    // Fallback: si es venta antigua sin transactionId, usar el id individual
+    const key = sale.transactionId || sale.id
+    if (!groupedSales[key]) groupedSales[key] = []
+    groupedSales[key].push(sale)
+  })
+
+  const sortedTransactions = Object.entries(groupedSales)
+    .map(([txId, items]) => ({
+      id: txId,
+      timestamp: items[0].createdAt.getTime(),
+      items,
+      total: items.reduce((sum, item) => sum + item.totalPrice, 0),
+      discount: items.reduce((sum, item) => sum + (item.discountApplied || 0), 0),
+      discountPercentage: items.find(i => i.discountPercentage)?.discountPercentage || null,
+      customer: items[0].customerName || 'Consumidor Final',
+      phone: items[0].customerPhone,
+      method: items[0].paymentMethod
+    }))
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 15)
 
   return (
     <>
@@ -152,41 +182,89 @@ export default async function SalesPage() {
           </div>
         </div>
 
-        {/* Recent Sales Items */}
+        {/* Recent Sales Transactions (Tickets) */}
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-          <h3 className="text-lg font-semibold mb-4">Últimos 10 Productos Vendidos</h3>
-          <div className="space-y-3">
-            {todaySales.slice(0, 10).map(sale => (
-              <div key={sale.id} className="flex items-center justify-between py-3 border-b last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <Package className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {sale.product.type.name} {sale.product.phoneModel.name}
-                      <span className="text-muted-foreground text-xs ml-2">
-                        (x{sale.quantity})
-                      </span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Cliente: {sale.customerName || 'Consumidor Final'} 
-                      {sale.customerPhone && ` - ${sale.customerPhone}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium">Bs. {sale.totalPrice.toFixed(2)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(sale.createdAt), { addSuffix: true, locale: es })}
-                  </p>
-                </div>
-              </div>
-            ))}
-            {todaySales.length === 0 && (
-              <p className="text-center text-muted-foreground py-4">No hay ventas registradas el día de hoy.</p>
-            )}
-          </div>
+          <h3 className="text-lg font-semibold mb-4">Últimas 10 Ventas Realizadas</h3>
+          
+          {sortedTransactions.length === 0 ? (
+            <p className="text-center text-muted-foreground py-4">No hay ventas registradas el día de hoy.</p>
+          ) : (
+            <Accordion type="single" collapsible className="w-full space-y-2">
+              {sortedTransactions.map((ticket, index) => (
+                <AccordionItem key={ticket.id} value={`ticket-${ticket.id}`} className="border rounded-lg px-4 bg-muted/20">
+                  <AccordionTrigger className="hover:no-underline py-3 cursor-pointer">
+                    <div className="flex flex-1 items-center justify-between pr-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center shrink-0">
+                          <ShoppingCart className="h-5 w-5 text-green-600 dark:text-green-400" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-bold">
+                            {ticket.customer}
+                            <span className="ml-2 text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full capitalize">
+                              {ticket.method}
+                            </span>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {ticket.items.length} {ticket.items.length === 1 ? 'producto' : 'productos'} • {formatDistanceToNow(new Date(ticket.timestamp), { addSuffix: true, locale: es })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-green-600 dark:text-green-400">Bs. {ticket.total.toFixed(2)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">Ticket</p>
+                      </div>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-2 pb-4">
+                    <div className="pl-14 pr-4 space-y-3">
+                      <div className="grid grid-cols-12 gap-4 font-bold text-xs uppercase text-muted-foreground border-b pb-2">
+                        <div className="col-span-8">Producto</div>
+                        <div className="col-span-2 text-center">Cant.</div>
+                        <div className="col-span-2 text-right">Subtotal</div>
+                      </div>
+                      {ticket.items.map(sale => (
+                        <div key={sale.id} className="grid grid-cols-12 gap-4 items-center text-sm border-b border-dashed border-muted pb-2 last:border-0 last:pb-0">
+                          <div className="col-span-8">
+                            <span className="font-medium">{sale.product.type.name} {sale.product.phoneModel.name}</span>
+                            {sale.notes && (
+                              <p className="text-xs text-muted-foreground italic mt-0.5 text-red-500/80">
+                                {sale.notes.replace('Venta de stock dañado', 'Dañado')}
+                              </p>
+                            )}
+                          </div>
+                          <div className="col-span-2 text-center text-muted-foreground">
+                            x{sale.quantity}
+                          </div>
+                          <div className="col-span-2 text-right font-medium">
+                            Bs. {sale.totalPrice.toFixed(2)}
+                          </div>
+                        </div>
+                      ))}
+                      {ticket.discount > 0 && (
+                        <div className="mt-2 pt-2 border-t border-muted">
+                          <div className="flex justify-between items-center text-sm mb-1">
+                            <span className="text-muted-foreground uppercase text-xs tracking-widest">Subtotal Original</span>
+                            <span>Bs. {(ticket.total + ticket.discount).toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm font-medium mb-1">
+                            <span className="text-red-500/80 uppercase text-xs tracking-widest">
+                              Descuento Aplicado {ticket.discountPercentage ? `(${ticket.discountPercentage}%)` : ''}
+                            </span>
+                            <span className="text-red-500">- Bs. {ticket.discount.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm font-bold mt-2">
+                            <span className="uppercase text-xs tracking-widest">Total Pagado</span>
+                            <span className="text-green-600 dark:text-green-400">Bs. {ticket.total.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          )}
         </div>
 
         {/* Top Products and Payment Methods */}

@@ -10,20 +10,26 @@ export default async function NewSalePage() {
     redirect('/login')
   }
   
-  const products = await db.product.findMany({
-    where: {
-      status: 'active',
-      OR: [
-        { stock: { gt: 0 } },
-        { stockDamaged: { gt: 0 } }
-      ]
-    },
-    include: {
-      phoneModel: true,
-      color: true,
-      type: true
-    }
-  })
+  const [products, clients] = await Promise.all([
+    db.product.findMany({
+      where: {
+        status: 'active',
+        OR: [
+          { stock: { gt: 0 } },
+          { stockDamaged: { gt: 0 } }
+        ]
+      },
+      include: {
+        phoneModel: true,
+        color: true,
+        type: true
+      }
+    }),
+    db.client.findMany({
+      select: { id: true, name: true, phone: true, email: true },
+      orderBy: { name: 'asc' }
+    })
+  ])
 
   // Format products for the client component
   const availableProducts = products.map(p => ({
@@ -33,10 +39,11 @@ export default async function NewSalePage() {
     color: p.color.name,
     stock: p.stock,
     stockDamaged: p.stockDamaged,
-    priceRetail: p.priceRetail,
-    priceWholesale: p.priceWholesale,
+    priceRetail: p.priceRetail ?? 0,
+    priceWholesale: p.priceWholesale ?? 0,
     imageUrl: p.imageUrl
   }))
 
-  return <NewSaleClient availableProducts={availableProducts} />
+  return <NewSaleClient availableProducts={availableProducts} clients={clients} />
 }
+

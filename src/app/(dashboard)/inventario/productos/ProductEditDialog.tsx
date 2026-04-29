@@ -25,6 +25,9 @@ type ProductData = {
   hasDiscount?: boolean;
   discountPercentage?: number | null;
   discountPrice?: number | null;
+  isPublic?: boolean;
+  publicPrice?: number | null;
+  images?: { id: string; url: string; isCover: boolean; isPublic: boolean }[];
 };
 
 export default function ProductEditDialog({

@@ -151,7 +151,8 @@ model ProductImage {
   id        String   @id @default(uuid())
   url       String
   isCover   Boolean  @default(false)
-  product   Product  @relation(fields: [productId], references: [id])
+  isPublic  Boolean  @default(true)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   productId String
   createdAt DateTime @default(now())
 }
@@ -159,17 +160,19 @@ model ProductImage {
 // TERCERO: Modelos de transacciones (dependen de Product)
 model Sale {
   id              String   @id @default(uuid())
+  transactionId   String?  // Agrupa múltiples productos del mismo carrito
   productId       String
   product         Product  @relation(fields: [productId], references: [id])
   quantity        Int
   unitPrice       Float
   originalPrice   Float?
-  discountApplied Float?   @default(0)
+  discountApplied    Float?   @default(0)
+  discountPercentage Float?
   totalPrice      Float
   customerName    String?
   customerPhone   String?
   paymentMethod   String   @default("efectivo")
-  type            String   @default("minorista") // minorista, mayorista
+  type            String   @default("minorista")
   notes           String?
   clientId        String?
   client          Client?  @relation(fields: [clientId], references: [id])
@@ -177,7 +180,9 @@ model Sale {
   updatedAt       DateTime @updatedAt
 
   @@index([createdAt])
+  @@index([transactionId])
   @@index([productId])
+  @@index([clientId])
   @@index([type])
 }
 
@@ -268,4 +273,3 @@ model Notification {
   @@index([userId])
   @@index([createdAt])
 }
-

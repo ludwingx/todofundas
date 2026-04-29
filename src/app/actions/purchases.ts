@@ -306,7 +306,7 @@ export async function assignStockAction(purchaseId: string, assignments: { purch
   }
 }
 
-export async function editReceivePurchaseAction(purchaseId: string, itemsData: { id: string; quantityGood: number; quantityDamaged: number; quantityLost: number; productId: string | null }[]) {
+export async function editReceivePurchaseAction(purchaseId: string, itemsData: { id: string; quantityOrdered: number; quantityGood: number; quantityDamaged: number; quantityLost: number; productId: string | null }[]) {
   const session = await getSession();
   if (!session) return { error: "No autorizado" };
 
@@ -344,11 +344,17 @@ export async function editReceivePurchaseAction(purchaseId: string, itemsData: {
         }
 
         // 3. ACTUALIZAR Item de compra
+        const newTotalCost = (item.quantityGood + item.quantityDamaged) > 0 
+          ? (item.quantityGood + item.quantityDamaged) * currentItem.unitCost
+          : item.quantityOrdered * currentItem.unitCost;
+
         await tx.purchaseItem.update({
           where: { id: item.id },
           data: {
+            quantityOrdered: item.quantityOrdered,
             quantityGood: item.quantityGood,
-            quantityDamaged: item.quantityDamaged + item.quantityLost
+            quantityDamaged: item.quantityDamaged + (item.quantityLost || 0),
+            totalCost: newTotalCost
           }
         });
 
@@ -390,6 +396,17 @@ export async function editReceivePurchaseAction(purchaseId: string, itemsData: {
           }
         }
       }
+
+      // 5. RECALCULAR el monto total de la compra sumando todos sus items
+      const updatedItems = await tx.purchaseItem.findMany({
+        where: { purchaseId }
+      });
+      const newTotalAmount = updatedItems.reduce((sum, i) => sum + i.totalCost, 0);
+
+      await tx.purchase.update({
+        where: { id: purchaseId },
+        data: { totalAmount: newTotalAmount }
+      });
     });
 
     revalidatePath("/compras");
@@ -402,3 +419,32 @@ export async function editReceivePurchaseAction(purchaseId: string, itemsData: {
   }
 }
 
+
+export async function deletePurchaseAction(purchaseId: string) {
+  const session = await getSession();
+  if (!session) return { error: "No autorizado" };
+
+  try {
+    const purchase = await prisma.purchase.findUnique({
+      where: { id: purchaseId },
+      select: { status: true }
+    });
+
+    if (!purchase) return { error: "Compra no encontrada" };
+    
+    // Seguridad: No permitir borrar si ya fue recibida porque afectaría stock y wallet
+    if (purchase.status !== "pendiente") {
+      return { error: "Solo se pueden eliminar compras en estado pendiente" };
+    }
+
+    await prisma.purchase.delete({
+      where: { id: purchaseId }
+    });
+
+    revalidatePath("/compras");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error eliminando compra:", error);
+    return { error: "Error al eliminar la compra" };
+  }
+}

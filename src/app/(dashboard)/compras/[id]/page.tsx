@@ -106,9 +106,7 @@ export default async function PurchaseDetailsPage({
             </p>
           </div>
           <div className="flex gap-3">
-             {purchase.status !== "pendiente" && (
-                <EditPurchaseQuantities purchase={purchase} availableProducts={availableProducts} />
-             )}
+             <EditPurchaseQuantities purchase={purchase} availableProducts={availableProducts} />
              {purchase.status === "pendiente" && (
                 <Link href={`/compras/${purchase.id}/recibir`}>
                   <Button className="bg-orange-600 hover:bg-orange-700">

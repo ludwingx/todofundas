@@ -104,14 +104,21 @@ export default function EditPurchaseQuantities({
 
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-12 gap-4 font-bold text-xs uppercase text-muted-foreground border-b pb-2">
-            <div className="col-span-8">Producto / Variante</div>
-            <div className="col-span-2 text-center text-green-600">Bien</div>
-            <div className="col-span-2 text-center text-amber-600">Dañado</div>
+            <div className={purchase.status === 'pendiente' ? "col-span-10" : "col-span-8"}>Producto / Variante</div>
+            {purchase.status === 'pendiente' ? (
+              <div className="col-span-2 text-center">Pedido</div>
+            ) : (
+              <>
+                <div className="col-span-2 text-center text-green-600">Bien</div>
+                <div className="col-span-2 text-center text-amber-600">Dañado</div>
+              </>
+            )}
           </div>
 
           {items.map((item: any) => (
             <div key={item.id} className="grid grid-cols-12 gap-4 items-center border-b pb-4 last:border-0">
-              <div className="col-span-8">
+              <div className={purchase.status === 'pendiente' ? "col-span-10" : "col-span-8"}>
+                {/* ... existing product selector ... */}
                 {item.productId ? (
                   <Popover 
                     open={openSelectors[item.id]} 
@@ -144,6 +151,7 @@ export default function EditPurchaseQuantities({
                     </PopoverTrigger>
                     <PopoverContent className="w-[300px] p-0 rounded-xl shadow-2xl border-none" align="start">
                       <Command className="rounded-xl">
+                        <CommandInput placeholder="Buscar producto..." className="h-10" />
                         <CommandInput placeholder="Buscar producto..." className="h-10" />
                         <CommandList className="max-h-[300px]">
                           <CommandEmpty>No se encontraron productos.</CommandEmpty>
@@ -185,22 +193,36 @@ export default function EditPurchaseQuantities({
                   </div>
                 )}
               </div>
-              <div className="col-span-2">
-                <Input 
-                  type="number" 
-                  value={item.quantityGood} 
-                  onChange={(e) => handleUpdate(item.id, 'quantityGood', e.target.value)}
-                  className="h-8 text-center"
-                />
-              </div>
-              <div className="col-span-2">
-                <Input 
-                  type="number" 
-                  value={item.quantityDamaged} 
-                  onChange={(e) => handleUpdate(item.id, 'quantityDamaged', e.target.value)}
-                  className="h-8 text-center"
-                />
-              </div>
+              
+              {purchase.status === 'pendiente' ? (
+                <div className="col-span-2 text-center">
+                  <Input 
+                    type="number" 
+                    value={item.quantityOrdered} 
+                    onChange={(e) => handleUpdate(item.id, 'quantityOrdered', e.target.value)}
+                    className="h-8 text-center"
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="col-span-2">
+                    <Input 
+                      type="number" 
+                      value={item.quantityGood} 
+                      onChange={(e) => handleUpdate(item.id, 'quantityGood', e.target.value)}
+                      className="h-8 text-center"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Input 
+                      type="number" 
+                      value={item.quantityDamaged} 
+                      onChange={(e) => handleUpdate(item.id, 'quantityDamaged', e.target.value)}
+                      className="h-8 text-center"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           ))}
 

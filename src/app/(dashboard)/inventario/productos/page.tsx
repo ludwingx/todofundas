@@ -35,6 +35,7 @@ import { DeleteModal } from "@/components/ui/delete-modal";
 import ProductDamageDialog from "./ProductDamageDialog";
 
 import Link from "next/link";
+import ProductStockDetailsDialog from "./ProductStockDetailsDialog";
 import {
   Table,
   TableBody,
@@ -75,6 +76,21 @@ export default async function ProductsPage() {
       material: {
         select: { id: true, name: true },
       },
+      purchaseItems: {
+        include: {
+          purchase: {
+            include: {
+              supplier: {
+                select: { name: true }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      },
+      images: {
+        orderBy: { createdAt: 'asc' }
+      }
     },
     orderBy: { createdAt: "desc" },
   });
@@ -89,6 +105,13 @@ export default async function ProductsPage() {
     displayName: `${product.type?.name || "Sin Tipo"} ${
       product.phoneModel?.name || "Sin Modelo"
     }`.trim(),
+    // Transform images to match ProductData type
+    images: product.images.map((img) => ({
+      id: img.id,
+      url: img.url,
+      isCover: img.isCover,
+      isPublic: true,
+    })),
   }));
 
   // Obtener tipos, proveedores, modelos, colores, materiales y compatibilidades
@@ -324,6 +347,15 @@ export default async function ProductsPage() {
                                 <AlertTriangle className="h-4 w-4 text-slate-600 group-hover:text-orange-600 transition-colors" />
                               </Button>
                             }
+                          />
+                          <ProductStockDetailsDialog 
+                            product={{
+                              id: product.id,
+                              displayName: product.displayName,
+                              stock: product.stock,
+                              stockDamaged: product.stockDamaged,
+                              purchaseItems: product.purchaseItems as any
+                            }}
                           />
                           <ProductEditDialog
                             product={product}
