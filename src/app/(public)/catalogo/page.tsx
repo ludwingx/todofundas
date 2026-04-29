@@ -32,30 +32,48 @@ export default async function CatalogPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const products = productsData.map(p => ({
-    id: p.id,
-    name: `${p.type?.name} para ${p.phoneModel?.name}`,
-    price: p.priceRetail,
-    imageUrl: p.imageUrl,
-    brandId: p.phoneModel?.brandId,
-    brandName: p.phoneModel?.brand?.name,
-    modelId: p.phoneModel?.id,
-    modelName: p.phoneModel?.name,
-    typeId: p.type?.id,
-    typeName: p.type?.name,
-    colorName: p.color?.name,
-    colorHex: p.color?.hexCode,
-    stock: p.stock,
-    materialName: p.material?.name,
-    images: p.images.map(img => img.url)
-  }));
-
-  // Fetch filter options
-  const [brands, models, types] = await Promise.all([
+  const [brands, models, types, colorsData] = await Promise.all([
     prisma.brand.findMany({ where: { status: "active" }, select: { id: true, name: true } }),
     prisma.phoneModel.findMany({ where: { status: "active" }, select: { id: true, name: true, brandId: true } }),
     prisma.productType.findMany({ select: { id: true, name: true } }),
+    prisma.color.findMany({ where: { status: "active" }, select: { id: true, name: true, hexCode: true } }),
   ]);
+
+  // Group products by Type and Model to handle color variants
+  const groupedProductsMap = new Map();
+
+  productsData.forEach(p => {
+    const key = `${p.typeId}-${p.phoneModelId}`;
+    if (!groupedProductsMap.has(key)) {
+      groupedProductsMap.set(key, {
+        id: p.id,
+        name: `${p.type?.name} para ${p.phoneModel?.name}`,
+        price: p.publicPrice ?? p.priceRetail ?? 0,
+        imageUrl: p.imageUrl,
+        brandId: p.phoneModel?.brandId,
+        brandName: p.phoneModel?.brand?.name,
+        modelId: p.phoneModel?.id,
+        modelName: p.phoneModel?.name,
+        typeId: p.type?.id,
+        typeName: p.type?.name,
+        materialName: p.material?.name,
+        variants: []
+      });
+    }
+
+    const group = groupedProductsMap.get(key);
+    group.variants.push({
+      id: p.id,
+      colorName: p.color?.name,
+      colorHex: p.color?.hexCode,
+      stock: p.stock,
+      price: p.publicPrice ?? p.priceRetail ?? 0,
+      imageUrl: p.imageUrl,
+      images: p.images.map(img => img.url)
+    });
+  });
+
+  const products = Array.from(groupedProductsMap.values());
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -89,6 +107,7 @@ export default async function CatalogPage() {
           brands={brands} 
           models={models} 
           types={types} 
+          colors={colorsData}
         />
       </div>
     </div>

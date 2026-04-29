@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import { 
   Search, 
@@ -10,7 +10,9 @@ import {
   ShieldCheck, 
   Zap, 
   Truck,
-  X
+  X,
+  SlidersHorizontal,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +22,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+
+type ProductVariant = {
+  id: string;
+  colorName: string | undefined;
+  colorHex: string | undefined;
+  stock: number;
+  price: number;
+  imageUrl: string | null;
+  images: string[];
+};
 
 type CatalogProduct = {
   id: string;
@@ -32,11 +52,8 @@ type CatalogProduct = {
   modelName: string | undefined;
   typeId: string | undefined;
   typeName: string | undefined;
-  colorName: string | undefined;
-  colorHex: string | undefined;
-  stock: number;
   materialName?: string;
-  images?: string[];
+  variants: ProductVariant[];
 };
 
 export default function CatalogClient({
@@ -44,17 +61,30 @@ export default function CatalogClient({
   brands,
   models,
   types,
+  colors,
 }: {
   initialProducts: CatalogProduct[];
   brands: { id: string; name: string }[];
   models: { id: string; name: string; brandId: string }[];
   types: { id: string; name: string }[];
+  colors: { id: string; name: string; hexCode: string }[];
 }) {
   const [search, setSearch] = useState("");
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("");
+  const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null);
+  const [activeVariant, setActiveVariant] = useState<ProductVariant | null>(null);
+
+  // Update active variant when a product is selected
+  useEffect(() => {
+    if (selectedProduct) {
+      setActiveVariant(selectedProduct.variants[0]);
+    } else {
+      setActiveVariant(null);
+    }
+  }, [selectedProduct]);
 
   const filteredModels = useMemo(() => {
     if (!selectedBrand) return models;
@@ -67,109 +97,167 @@ export default function CatalogClient({
       const matchBrand = selectedBrand ? product.brandId === selectedBrand : true;
       const matchModel = selectedModel ? product.modelId === selectedModel : true;
       const matchType = selectedType ? product.typeId === selectedType : true;
-      return matchSearch && matchBrand && matchModel && matchType;
-    });
-  }, [initialProducts, search, selectedBrand, selectedModel, selectedType]);
+      
+      // Filter by color in variants
+      const matchColor = selectedColor 
+        ? product.variants.some(v => v.colorHex?.toLowerCase() === selectedColor.toLowerCase()) 
+        : true;
 
-  const handleWhatsApp = (product: CatalogProduct) => {
-    // Reemplaza con el número real de Market GS
+      return matchSearch && matchBrand && matchModel && matchType && matchColor;
+    });
+  }, [initialProducts, search, selectedBrand, selectedModel, selectedType, selectedColor]);
+
+  const handleWhatsApp = (variant: ProductVariant, productName: string) => {
     const phoneNumber = "59170000000"; 
-    const message = `Hola! Estoy interesado en el producto: ${product.name}. ¿Sigue disponible?`;
+    const message = `Hola! Estoy interesado en el producto: ${productName} (Color: ${variant.colorName}). ¿Sigue disponible?`;
     window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, "_blank");
   };
 
-  return (
-    <div className="flex flex-col lg:flex-row gap-12">
-      {/* Sidebar de Filtros */}
-      <aside className="w-full lg:w-72 shrink-0 space-y-10">
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-6 italic">Búsqueda</h3>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-              <Input
-                placeholder="BUSCAR..."
-                className="pl-9 h-12 rounded-none border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 font-black text-[10px] tracking-widest focus-visible:ring-black dark:focus-visible:ring-white transition-all uppercase"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-8">
-            <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 italic">Marca</label>
-              <select
-                className="flex h-12 w-full rounded-none border border-gray-100 dark:border-white/10 bg-white dark:bg-black px-4 py-2 text-[10px] font-black tracking-widest uppercase focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all"
-                value={selectedBrand}
-                onChange={(e) => {
-                  setSelectedBrand(e.target.value);
-                  setSelectedModel(""); 
-                }}
-              >
-                <option value="">TODAS LAS MARCAS</option>
-                {brands.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 italic">Modelo</label>
-              <select
-                className="flex h-12 w-full rounded-none border border-gray-100 dark:border-white/10 bg-white dark:bg-black px-4 py-2 text-[10px] font-black tracking-widest uppercase focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all disabled:opacity-30"
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                disabled={!selectedBrand && filteredModels.length > 50}
-              >
-                <option value="">TODOS LOS MODELOS</option>
-                {filteredModels.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 italic">Tipo</label>
-              <select
-                className="flex h-12 w-full rounded-none border border-gray-100 dark:border-white/10 bg-white dark:bg-black px-4 py-2 text-[10px] font-black tracking-widest uppercase focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all"
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-              >
-                <option value="">TODOS LOS TIPOS</option>
-                {types.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            {(search || selectedBrand || selectedModel || selectedType) && (
-              <Button 
-                variant="link" 
-                className="p-0 h-auto text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-black dark:hover:text-white transition-colors"
-                onClick={() => {
-                  setSearch("");
-                  setSelectedBrand("");
-                  setSelectedModel("");
-                  setSelectedType("");
-                }}
-              >
-                Limpiar Filtros
-              </Button>
-            )}
+  const FiltersContent = () => (
+    <div className="space-y-10">
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-6 italic">Búsqueda</h3>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+            <Input
+              placeholder="BUSCAR..."
+              className="pl-9 h-12 rounded-none border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 font-black text-[10px] tracking-widest focus-visible:ring-black dark:focus-visible:ring-white transition-all uppercase"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </div>
+
+        <div className="space-y-8">
+          {/* Marca */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 italic">Marca</label>
+            <select
+              className="flex h-12 w-full rounded-none border border-gray-100 dark:border-white/10 bg-white dark:bg-black px-4 py-2 text-[10px] font-black tracking-widest uppercase focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all"
+              value={selectedBrand}
+              onChange={(e) => {
+                setSelectedBrand(e.target.value);
+                setSelectedModel(""); 
+              }}
+            >
+              <option value="">TODAS LAS MARCAS</option>
+              {brands.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Modelo */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 italic">Modelo</label>
+            <select
+              className="flex h-12 w-full rounded-none border border-gray-100 dark:border-white/10 bg-white dark:bg-black px-4 py-2 text-[10px] font-black tracking-widest uppercase focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all disabled:opacity-30"
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              disabled={!selectedBrand && filteredModels.length > 50}
+            >
+              <option value="">TODOS LOS MODELOS</option>
+              {filteredModels.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tipo */}
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 italic">Tipo</label>
+            <select
+              className="flex h-12 w-full rounded-none border border-gray-100 dark:border-white/10 bg-white dark:bg-black px-4 py-2 text-[10px] font-black tracking-widest uppercase focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all"
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+            >
+              <option value="">TODOS LOS TIPOS</option>
+              {types.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Colores */}
+          <div className="space-y-4">
+            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 italic">Paleta de Colores</label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setSelectedColor("")}
+                className={cn(
+                  "w-8 h-8 rounded-full border flex items-center justify-center text-[8px] font-black uppercase",
+                  selectedColor === "" ? "border-black dark:border-white bg-black dark:bg-white text-white dark:text-black" : "border-gray-200 dark:border-white/10"
+                )}
+              >
+                All
+              </button>
+              {colors.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedColor(c.hexCode)}
+                  className={cn(
+                    "w-8 h-8 rounded-full border-2 transition-all",
+                    selectedColor === c.hexCode ? "border-black dark:border-white scale-110" : "border-transparent"
+                  )}
+                  style={{ backgroundColor: c.hexCode }}
+                  title={c.name}
+                />
+              ))}
+            </div>
+          </div>
+          
+          {(search || selectedBrand || selectedModel || selectedType || selectedColor) && (
+            <Button 
+              variant="link" 
+              className="p-0 h-auto text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-black dark:hover:text-white transition-colors"
+              onClick={() => {
+                setSearch("");
+                setSelectedBrand("");
+                setSelectedModel("");
+                setSelectedType("");
+                setSelectedColor("");
+              }}
+            >
+              Limpiar Filtros
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-12">
+      {/* Sidebar de Filtros - Desktop */}
+      <aside className="hidden lg:block w-72 shrink-0">
+        <FiltersContent />
       </aside>
+
+      {/* Header y Filtros - Mobile */}
+      <div className="lg:hidden flex items-center justify-between mb-8 pb-4 border-b border-gray-100 dark:border-white/10">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+          <span className="text-black dark:text-white">{filteredProducts.length}</span> PIEZAS
+        </p>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="rounded-none border-black dark:border-white font-black text-[10px] uppercase tracking-widest px-6">
+              <SlidersHorizontal className="w-3 h-3 mr-2" />
+              Filtrar
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[300px] bg-white dark:bg-black border-none p-8">
+            <SheetHeader className="mb-10">
+              <SheetTitle className="text-left text-xl font-black italic uppercase tracking-tighter">Filtros</SheetTitle>
+            </SheetHeader>
+            <FiltersContent />
+          </SheetContent>
+        </Sheet>
+      </div>
 
       {/* Grid de Productos */}
       <main className="flex-1">
-        <div className="mb-10 flex items-center justify-between border-b border-gray-100 dark:border-white/10 pb-4">
+        <div className="hidden lg:flex mb-10 items-center justify-between border-b border-gray-100 dark:border-white/10 pb-4">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
             Mostrando <span className="text-black dark:text-white">{filteredProducts.length}</span> PIEZAS
           </p>
@@ -179,23 +267,21 @@ export default function CatalogClient({
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <PackageX className="w-10 h-10 text-gray-200 dark:text-gray-800 mb-6" />
             <h3 className="text-sm font-black uppercase tracking-[0.3em] mb-2 italic text-gray-400">Sin resultados</h3>
-            <p className="text-[10px] text-gray-300 dark:text-gray-700 uppercase tracking-widest font-bold">
-              Intenta con otros filtros.
+            <p className="text-[10px] text-gray-300 dark:text-gray-700 uppercase tracking-widest font-bold italic">
+              Prueba ajustando los filtros de búsqueda.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-12">
             {filteredProducts.map((product) => (
               <div 
                 key={product.id} 
                 className="group relative flex flex-col transition-all duration-500 bg-white dark:bg-black border border-gray-100 dark:border-white/5 hover:border-black dark:hover:border-white"
               >
-                {/* Trigger for Detail Dialog */}
                 <button 
                   onClick={() => setSelectedProduct(product)}
                   className="block flex-1 text-left outline-none"
                 >
-                  {/* Image Container */}
                   <div className="relative aspect-[4/5] bg-gray-50 dark:bg-gray-950 overflow-hidden mb-6 transition-colors">
                     {product.imageUrl ? (
                       <Image
@@ -208,28 +294,16 @@ export default function CatalogClient({
                       <Smartphone className="w-16 h-16 text-gray-200 dark:text-gray-800" />
                     )}
                     
-                    {/* Badges Overlay */}
+                    {/* Badge de Variantes */}
                     <div className="absolute top-4 left-4 flex flex-col gap-2">
-                      {product.colorHex && (
-                        <div className="flex items-center gap-2 bg-white/90 dark:bg-black/90 backdrop-blur-md px-2 py-1.5 border border-gray-100 dark:border-white/10">
-                          <span 
-                            className="w-2 h-2 rounded-full border border-gray-200 dark:border-white/20" 
-                            style={{ backgroundColor: product.colorHex }} 
-                          />
-                          <span className="text-[8px] font-black uppercase tracking-widest leading-none">
-                            {product.colorName}
-                          </span>
-                        </div>
-                      )}
-                      {product.stock <= 3 && (
-                        <div className="bg-black dark:bg-white text-white dark:text-black px-2 py-1.5 text-[8px] font-black uppercase tracking-widest">
-                          Últimas {product.stock}
-                        </div>
-                      )}
+                      <div className="bg-white/90 dark:bg-black/90 backdrop-blur-md px-2 py-1.5 border border-gray-100 dark:border-white/10 shadow-sm">
+                        <span className="text-[8px] font-black uppercase tracking-[0.2em] leading-none">
+                          {product.variants.length} Colores
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Content */}
                   <div className="px-6 pb-2 space-y-2">
                     <div className="flex items-center justify-between gap-4">
                       <p className="text-[10px] text-gray-400 dark:text-gray-600 font-black uppercase tracking-[0.2em] italic">
@@ -239,21 +313,33 @@ export default function CatalogClient({
                     <h3 className="font-black text-sm uppercase tracking-tight leading-tight group-hover:italic transition-all">
                       {product.name}
                     </h3>
-                    <div className="pt-2">
-                      <span className="text-xs font-black uppercase tracking-widest opacity-40 mr-2">Precio:</span>
-                      <span className="text-lg font-black italic">Bs. {product.price.toFixed(2)}</span>
+                    <div className="pt-2 flex items-center justify-between">
+                      <div>
+                        <span className="text-xs font-black uppercase tracking-widest opacity-40 mr-2">Desde:</span>
+                        <span className="text-lg font-black italic">Bs. {product.price?.toFixed(2) ?? "0.00"}</span>
+                      </div>
+                      <div className="flex -space-x-1">
+                        {product.variants.slice(0, 3).map((v, i) => (
+                          <div 
+                            key={i} 
+                            className="w-3 h-3 rounded-full border border-white dark:border-black ring-1 ring-gray-200 dark:ring-white/10"
+                            style={{ backgroundColor: v.colorHex }}
+                          />
+                        ))}
+                        {product.variants.length > 3 && (
+                          <span className="text-[8px] font-bold text-gray-400 pl-2">+{product.variants.length - 3}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </button>
 
-                {/* Footer with Permanent WhatsApp Button */}
                 <div className="p-6 pt-2">
                   <Button 
                     className="w-full h-12 bg-black dark:bg-white text-white dark:text-black hover:opacity-80 transition-all rounded-none font-black text-[10px] uppercase tracking-[0.2em] border-none shadow-none" 
-                    onClick={() => handleWhatsApp(product)}
+                    onClick={() => setSelectedProduct(product)}
                   >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Consultar por WhatsApp
+                    Ver Variantes
                   </Button>
                 </div>
               </div>
@@ -264,58 +350,50 @@ export default function CatalogClient({
 
       {/* Product Detail Dialog */}
       <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
-        <DialogContent className="max-w-5xl p-0 overflow-hidden rounded-none border-none bg-white dark:bg-black h-full md:h-auto max-h-[95vh]">
-          {selectedProduct && (
-            <div className="grid grid-cols-1 md:grid-cols-12 h-full overflow-hidden">
+        <DialogContent className="w-[95vw] md:w-full max-w-5xl sm:max-w-5xl p-0 overflow-y-auto md:overflow-hidden rounded-none border-none bg-white dark:bg-black h-auto max-h-[95vh]">
+          {selectedProduct && activeVariant && (
+            <div className="grid grid-cols-1 md:grid-cols-12 md:h-full md:overflow-hidden">
               
-              {/* Left Column: Visuals (7/12 on desktop) */}
+              {/* Left Column: Visuals */}
               <div className="md:col-span-7 bg-gray-50 dark:bg-gray-950 flex flex-col border-r border-gray-100 dark:border-white/5">
-                <div className="relative flex-1 aspect-square md:aspect-auto overflow-hidden min-h-[350px]">
+                <div className="relative flex-1 aspect-square md:aspect-auto overflow-hidden min-h-[400px]">
                   <Image
-                    src={selectedProduct.imageUrl || "/placeholder.jpg"}
+                    src={activeVariant.imageUrl || selectedProduct.imageUrl || "/placeholder.jpg"}
                     alt={selectedProduct.name}
                     fill
                     className="object-cover transition-all duration-700"
-                    id="main-product-image"
+                    key={activeVariant.id}
                     priority
                   />
-                  {/* Stock Badge Overlay */}
-                  {selectedProduct.stock <= 3 && (
+                  {activeVariant.stock <= 3 && (
                     <div className="absolute top-6 left-6 bg-black dark:bg-white text-white dark:text-black px-3 py-1.5 text-[10px] font-black uppercase tracking-widest italic">
-                      Escasez: {selectedProduct.stock} unidades
+                      Quedan {activeVariant.stock} uds.
                     </div>
                   )}
                 </div>
                 
-                {/* Interactive Gallery */}
-                {selectedProduct.images && selectedProduct.images.length > 1 && (
+                {/* Variant Images Gallery */}
+                {activeVariant.images && activeVariant.images.length > 0 && (
                   <div className="flex gap-3 p-6 bg-white dark:bg-black/40 overflow-x-auto scrollbar-hide">
-                    {[selectedProduct.imageUrl, ...selectedProduct.images.filter(img => img !== selectedProduct.imageUrl)].map((img, idx) => (
+                    {activeVariant.images.map((img, idx) => (
                       <button 
                         key={idx} 
-                        onClick={() => {
-                          const mainImg = document.getElementById('main-product-image') as HTMLImageElement;
-                          if (mainImg) mainImg.src = img || "";
-                        }}
                         className="w-20 h-20 shrink-0 border-2 border-transparent hover:border-black dark:hover:border-white transition-all bg-gray-100 dark:bg-gray-900 overflow-hidden relative group"
                       >
-                        <img src={img || ""} alt={`V${idx}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                        <img src={img} alt={`V${idx}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
                       </button>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Right Column: Information (5/12 on desktop) */}
-              <div className="md:col-span-5 p-8 md:p-12 flex flex-col bg-white dark:bg-black overflow-y-auto">
+              {/* Right Column: Information */}
+              <div className="md:col-span-5 p-8 md:p-12 flex flex-col bg-white dark:bg-black md:overflow-y-auto">
                 <div className="flex-1 space-y-10">
-                  {/* Header Info */}
                   <header className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 italic">
-                        {selectedProduct.brandName} • {selectedProduct.modelName}
-                      </p>
-                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 italic">
+                      {selectedProduct.brandName} • {selectedProduct.modelName}
+                    </p>
                     <DialogHeader className="p-0 text-left">
                       <DialogTitle className="text-3xl md:text-4xl font-black tracking-tighter uppercase italic leading-[0.85]">
                         {selectedProduct.typeName}
@@ -326,24 +404,42 @@ export default function CatalogClient({
                     <div className="flex items-center gap-4 pt-4">
                       <div className="h-[2px] w-12 bg-black dark:bg-white" />
                       <span className="text-2xl md:text-3xl font-black italic">
-                        Bs. {selectedProduct.price.toFixed(2)}
+                        Bs. {activeVariant.price?.toFixed(2) ?? "0.00"}
                       </span>
                     </div>
                   </header>
 
-                  {/* Product Specification Grid */}
-                  <div className="grid grid-cols-1 gap-y-6 pt-8 border-t border-gray-100 dark:border-white/5">
-                    <div className="flex items-center justify-between group">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic group-hover:text-black dark:group-hover:text-white transition-colors">Color</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[11px] font-black uppercase tracking-widest">{selectedProduct.colorName}</span>
-                        <div 
-                          className="w-3.5 h-3.5 rounded-full border border-gray-200 dark:border-white/20" 
-                          style={{ backgroundColor: selectedProduct.colorHex }} 
-                        />
-                      </div>
+                  {/* VARIANT SELECTOR */}
+                  <div className="space-y-6 pt-8 border-t border-gray-100 dark:border-white/5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic">
+                        Selecciona Color
+                      </label>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-black dark:text-white italic bg-gray-100 dark:bg-white/10 px-2 py-1">
+                        {activeVariant.colorName}
+                      </span>
                     </div>
+                    <div className="flex flex-wrap gap-3">
+                      {selectedProduct.variants.map((v) => (
+                        <button
+                          key={v.id}
+                          onClick={() => setActiveVariant(v)}
+                          className={cn(
+                            "w-10 h-10 rounded-full border-2 p-0.5 transition-all",
+                            activeVariant.id === v.id ? "border-black dark:border-white scale-110 shadow-lg" : "border-transparent opacity-60 hover:opacity-100"
+                          )}
+                        >
+                          <div 
+                            className="w-full h-full rounded-full border border-black/5" 
+                            style={{ backgroundColor: v.colorHex }} 
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
+                  {/* Specifications */}
+                  <div className="grid grid-cols-1 gap-y-6 pt-8 border-t border-gray-100 dark:border-white/5">
                     <div className="flex items-center justify-between group">
                       <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic group-hover:text-black dark:group-hover:text-white transition-colors">Material</span>
                       <span className="text-[11px] font-black uppercase tracking-widest">{selectedProduct.materialName || "Aero-Composite"}</span>
@@ -351,18 +447,12 @@ export default function CatalogClient({
 
                     <div className="flex items-center justify-between group">
                       <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic group-hover:text-black dark:group-hover:text-white transition-colors">Disponibilidad</span>
-                      <span className={`text-[11px] font-black uppercase tracking-widest ${selectedProduct.stock <= 3 ? 'text-orange-500' : ''}`}>
-                        {selectedProduct.stock > 0 ? `Stock: ${selectedProduct.stock} uds.` : "Agotado"}
+                      <span className={cn("text-[11px] font-black uppercase tracking-widest", activeVariant.stock <= 3 ? 'text-orange-500' : '')}>
+                        {activeVariant.stock > 0 ? `Stock: ${activeVariant.stock} uds.` : "Agotado"}
                       </span>
-                    </div>
-
-                    <div className="flex items-center justify-between group">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 italic group-hover:text-black dark:group-hover:text-white transition-colors">Compatibilidad</span>
-                      <span className="text-[11px] font-black uppercase tracking-widest">{selectedProduct.modelName}</span>
                     </div>
                   </div>
 
-                  {/* Trust Markers */}
                   <div className="flex justify-between items-center pt-8 border-t border-gray-100 dark:border-white/5 opacity-40">
                     <div className="flex flex-col items-center gap-2">
                       <ShieldCheck className="w-5 h-5" />
@@ -379,18 +469,15 @@ export default function CatalogClient({
                   </div>
                 </div>
 
-                {/* Call to Action */}
                 <div className="pt-12">
                   <Button 
                     className="w-full h-16 bg-black dark:bg-white text-white dark:text-black hover:opacity-80 transition-all rounded-none font-black text-xs uppercase tracking-[0.4em] border-none shadow-2xl flex items-center justify-center gap-4 group"
-                    onClick={() => handleWhatsApp(selectedProduct)}
+                    onClick={() => handleWhatsApp(activeVariant, selectedProduct.name)}
+                    disabled={activeVariant.stock === 0}
                   >
                     <MessageCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    Comprar ahora
+                    {activeVariant.stock > 0 ? "Consultar Stock" : "Agotado"}
                   </Button>
-                  <p className="mt-4 text-[8px] text-center text-gray-400 uppercase tracking-[0.2em] font-black italic">
-                    Conexión directa vía WhatsApp • Market GS
-                  </p>
                 </div>
               </div>
             </div>

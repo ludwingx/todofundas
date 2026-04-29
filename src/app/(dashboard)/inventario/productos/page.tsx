@@ -63,9 +63,6 @@ export default async function ProductsPage() {
   const productsData = await prisma.product.findMany({
     where: { status: "active" },
     include: {
-      supplier: {
-        select: { id: true, name: true, status: true },
-      },
       type: {
         select: { id: true, name: true },
       },
@@ -215,8 +212,7 @@ export default async function ProductsPage() {
                   <TableHead className="text-red-600 hidden md:table-cell">Dañados</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Precio</TableHead>
-                  <TableHead>Precio</TableHead>
-                  <TableHead>Acciones</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
