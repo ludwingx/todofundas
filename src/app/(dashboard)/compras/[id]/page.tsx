@@ -49,6 +49,20 @@ export default async function PurchaseDetailsPage({
 
   if (!purchase) notFound();
 
+  // Fetch products for the edit dialog
+  const availableProducts = await prisma.product.findMany({
+    where: { status: "active" },
+    include: {
+      phoneModel: true,
+      color: true,
+      type: true
+    },
+    orderBy: [
+      { type: { name: 'asc' } },
+      { phoneModel: { name: 'asc' } }
+    ]
+  });
+
   const totalOrdered = purchase.items.reduce((sum, i) => sum + i.quantityOrdered, 0);
   const totalGood = purchase.items.reduce((sum, i) => sum + i.quantityGood, 0);
   const totalDamaged = purchase.items.reduce((sum, i) => sum + i.quantityDamaged, 0);
@@ -93,7 +107,7 @@ export default async function PurchaseDetailsPage({
           </div>
           <div className="flex gap-3">
              {purchase.status !== "pendiente" && (
-                <EditPurchaseQuantities purchase={purchase} />
+                <EditPurchaseQuantities purchase={purchase} availableProducts={availableProducts} />
              )}
              {purchase.status === "pendiente" && (
                 <Link href={`/compras/${purchase.id}/recibir`}>
@@ -190,9 +204,20 @@ export default async function PurchaseDetailsPage({
                       <tr key={item.id} className="hover:bg-muted/10 transition-colors">
                         <td className="p-4">
                           <div className="flex flex-col">
-                            <span className="font-semibold">{item.productType?.name || 'Producto'}</span>
+                            <span className="font-semibold">
+                              {item.product 
+                                ? `${item.product.type.name} ${item.product.phoneModel.name}`
+                                : item.productType?.name || 'Producto'}
+                            </span>
+                            {item.product?.color && (
+                              <span className="text-[10px] text-muted-foreground uppercase font-medium">
+                                Color: {item.product.color.name}
+                              </span>
+                            )}
                             {item.productId && (
-                               <span className="text-xs text-muted-foreground italic">Asignado correctamente</span>
+                               <span className="text-[10px] text-green-600 font-bold uppercase mt-0.5">
+                                 Stock Asignado
+                               </span>
                             )}
                           </div>
                         </td>

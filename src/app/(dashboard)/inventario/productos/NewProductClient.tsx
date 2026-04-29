@@ -16,7 +16,7 @@ export default function NewProductClient({
   colors: { id: string; name: string; hexCode: string }[];
   materials: { id: string; name: string }[];
   compatibilities: { id: string; name: string; deviceType: string }[];
-  onSuccess?: () => void;
+  onSuccess?: (product: any) => void;
 }) {
   const [phoneModels, setPhoneModels] = useState(initialPhoneModels);
   const [colors, setColors] = useState(initialColors);
@@ -70,7 +70,7 @@ export default function NewProductClient({
         const { toast } = await import("sonner");
         toast.success("Producto creado exitosamente");
         router.refresh(); // Actualiza los Server Components (la tabla)
-        if (onSuccess) onSuccess();
+        if (onSuccess) onSuccess(resJson.data);
       } else {
         alert(resJson.error || "Error al crear el producto");
       }

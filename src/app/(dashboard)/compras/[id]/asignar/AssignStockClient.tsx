@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -9,8 +9,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { assignStockAction } from "@/app/actions/purchases";
-import { Package, ArrowRight, AlertTriangle, Plus } from "lucide-react";
+import { Package, ArrowRight, AlertTriangle, Plus, Search, ChevronRight } from "lucide-react";
 import { RegisterProductDialog } from "@/app/(dashboard)/inventario/productos/RegisterProductDialog";
+import { 
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface PurchaseItemAssignment {
   purchaseItemId: string;
@@ -31,6 +45,15 @@ export default function AssignStockClient({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
+  const [activeAssignmentIndex, setActiveAssignmentIndex] = useState<number | null>(null);
+  const [openSelectors, setOpenSelectors] = useState<Record<number, boolean>>({});
+  const [localProducts, setLocalProducts] = useState(availableProducts);
+
+  // Sync local products when props change
+  useEffect(() => {
+    setLocalProducts(availableProducts);
+  }, [availableProducts]);
 
   // Initial state: one assignment per purchase item
   const [assignments, setAssignments] = useState<PurchaseItemAssignment[]>(
@@ -205,37 +228,121 @@ export default function AssignStockClient({
                             <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                               Asignar a Producto Específico
                             </label>
-                            <RegisterProductDialog {...metadata} />
+                            <div className="hidden">
+                              <RegisterProductDialog 
+                                {...metadata} 
+                                open={isRegisterDialogOpen} 
+                                onOpenChange={setIsRegisterDialogOpen}
+                                showButton={false}
+                                onSuccess={(newProduct) => {
+                                  // 1. Agregar el nuevo producto a la lista local
+                                  setLocalProducts(prev => [newProduct, ...prev]);
+                                  // 2. Seleccionarlo automáticamente para la fila activa
+                                  if (activeAssignmentIndex !== null) {
+                                    handleProductChange(activeAssignmentIndex, newProduct.id);
+                                  }
+                                }}
+                              />
+                            </div>
                           </div>
-                          <Select 
-                            value={assignment.productId} 
-                            onValueChange={(val) => handleProductChange(assignmentIndex, val)}
+                          
+                          <Popover 
+                            open={openSelectors[assignmentIndex]} 
+                            onOpenChange={(open) => setOpenSelectors(prev => ({ ...prev, [assignmentIndex]: open }))}
                           >
-                            <SelectTrigger className="!h-18 w-full rounded-xl border-1 bg-background transition-all focus:border-foreground">
-                              <SelectValue className="text-base text-foreground" placeholder="Seleccionar variante de producto..." />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-[400px] rounded-xl shadow-2xl">
-                              {availableProducts.map(p => (
-                                <SelectItem key={p.id} value={p.id} className="focus:bg-muted/50 rounded-xl py-4 px-3">
-                                  <div className="flex items-center gap-4">
-                                    <div className="h-14 w-14 rounded-xl border bg-muted overflow-hidden flex-shrink-0">
-                                      {p.imageUrl ? (
-                                        <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
-                                      ) : (
-                                        <div className="h-full w-full flex items-center justify-center bg-muted/50">
-                                          <Package className="h-7 w-7 opacity-30" />
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="flex flex-col gap-0.5">
-                                      <span className="font-bold text-base">{p.type.name} {p.phoneModel.name}</span>
-                                      <span className="text-sm text-muted-foreground">{p.color?.name || 'Sin color'}</span>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={openSelectors[assignmentIndex]}
+                                className="!h-18 w-full justify-between rounded-xl border-1 bg-background px-4 text-base font-normal transition-all focus:border-foreground"
+                              >
+                                {assignment.productId ? (
+                                  <div className="flex items-center gap-3">
+                                    {localProducts.find(p => p.id === assignment.productId)?.imageUrl ? (
+                                      <img 
+                                        src={localProducts.find(p => p.id === assignment.productId)?.imageUrl} 
+                                        className="h-8 w-8 rounded-lg object-cover"
+                                        alt=""
+                                      />
+                                    ) : (
+                                      <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                                        <Package className="h-4 w-4 opacity-40" />
+                                      </div>
+                                    )}
+                                    <div className="flex flex-col items-start leading-none">
+                                      <span className="font-bold">
+                                        {localProducts.find(p => p.id === assignment.productId)?.type.name} {localProducts.find(p => p.id === assignment.productId)?.phoneModel.name}
+                                      </span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {localProducts.find(p => p.id === assignment.productId)?.color?.name || 'Sin color'}
+                                      </span>
                                     </div>
                                   </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                                ) : (
+                                  <span className="text-muted-foreground">Seleccionar variante de producto...</span>
+                                )}
+                                <ChevronRight className="h-4 w-4 opacity-50 rotate-90" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl shadow-2xl border-none" align="start">
+                              <Command className="rounded-xl">
+                                <CommandInput placeholder="Buscar producto..." className="h-12" />
+                                <CommandList className="max-h-[400px]">
+                                  <CommandEmpty>No se encontraron productos.</CommandEmpty>
+                                  
+                                  <CommandGroup>
+                                    <CommandItem
+                                      onSelect={() => {
+                                        setActiveAssignmentIndex(assignmentIndex);
+                                        setOpenSelectors(prev => ({ ...prev, [assignmentIndex]: false }));
+                                        setIsRegisterDialogOpen(true);
+                                      }}
+                                      className="flex items-center gap-4 py-4 px-3 cursor-pointer bg-foreground/5 hover:bg-foreground/10"
+                                    >
+                                      <div className="h-14 w-14 rounded-xl border-2 border-dashed border-foreground/30 flex items-center justify-center bg-background">
+                                        <Plus className="h-6 w-6" />
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="font-black text-base uppercase tracking-tight">Registrar Nuevo Producto</span>
+                                        <span className="text-xs text-muted-foreground font-medium">Si no encuentras el producto en la lista</span>
+                                      </div>
+                                    </CommandItem>
+                                  </CommandGroup>
+                                  
+                                  <CommandSeparator />
+                                  
+                                  <CommandGroup heading="Productos Disponibles">
+                                    {localProducts.map(p => (
+                                      <CommandItem
+                                        key={p.id}
+                                        value={`${p.type.name} ${p.phoneModel.name} ${p.color?.name || ''}`}
+                                        onSelect={() => {
+                                          handleProductChange(assignmentIndex, p.id);
+                                          setOpenSelectors(prev => ({ ...prev, [assignmentIndex]: false }));
+                                        }}
+                                        className="flex items-center gap-4 py-4 px-3 cursor-pointer"
+                                      >
+                                        <div className="h-14 w-14 rounded-xl border bg-muted overflow-hidden flex-shrink-0">
+                                          {p.imageUrl ? (
+                                            <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
+                                          ) : (
+                                            <div className="h-full w-full flex items-center justify-center bg-muted/50">
+                                              <Package className="h-7 w-7 opacity-30" />
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex flex-col gap-0.5">
+                                          <span className="font-bold text-base">{p.type.name} {p.phoneModel.name}</span>
+                                          <span className="text-sm text-muted-foreground">{p.color?.name || 'Sin color'}</span>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                         </div>
 
                         {/* Cantidades */}

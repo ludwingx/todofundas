@@ -18,6 +18,10 @@ interface RegisterProductDialogProps {
   colors: any[];
   materials: any[];
   compatibilities: any[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showButton?: boolean;
+  onSuccess?: (product: any) => void;
 }
 
 export function RegisterProductDialog({
@@ -26,18 +30,27 @@ export function RegisterProductDialog({
   colors,
   materials,
   compatibilities,
+  open: externalOpen,
+  onOpenChange: setExternalOpen,
+  showButton = true,
+  onSuccess,
 }: RegisterProductDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = setExternalOpen || setInternalOpen;
 
   return (
     <>
-      <Button 
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-2 transition-transform active:scale-95"
-      >
-        <Plus className="h-4 w-4" />
-        <span className="hidden sm:inline">Registrar Producto</span>
-      </Button>
+      {showButton && (
+        <Button 
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-2 transition-transform active:scale-95"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">Registrar Producto</span>
+        </Button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-4xl p-6 overflow-hidden flex flex-col max-h-[90vh] rounded-[2rem] border-none shadow-2xl">
@@ -53,7 +66,10 @@ export function RegisterProductDialog({
               colors={colors}
               materials={materials}
               compatibilities={compatibilities}
-              onSuccess={() => setOpen(false)}
+              onSuccess={(product) => {
+                setOpen(false);
+                if (onSuccess) onSuccess(product);
+              }}
             />
           </div>
         </DialogContent>
