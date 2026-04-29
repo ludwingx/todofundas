@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -110,123 +111,234 @@ export default function AssignStockClient({
 
   return (
     <div className="space-y-6">
-      <Card className="border-l-4 border-l-blue-500">
-        <CardHeader>
+      <Card className="border-none shadow-sm bg-background">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Pedido #{purchase.id.slice(0, 8).toUpperCase()}</CardTitle>
-              <CardDescription>Proveedor: {purchase.supplier.name}</CardDescription>
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold tracking-tight">Pedido #{purchase.id.slice(0, 8).toUpperCase()}</CardTitle>
+              <div className="flex flex-col gap-0.5">
+                <CardDescription className="text-muted-foreground font-medium">Proveedor: {purchase.supplier.name}</CardDescription>
+                <div className="flex items-center gap-4 mt-1">
+                  <div className="flex items-center gap-1.5 bg-muted/50 px-2.5 py-1 rounded-lg border border-muted-foreground/10">
+                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-wider">Items Pedidos:</span>
+                    <span className="text-xs font-bold">{purchase.items.reduce((sum: number, item: any) => sum + item.quantityGood + item.quantityDamaged, 0)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-muted/50 px-2.5 py-1 rounded-lg border border-muted-foreground/10">
+                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-wider">Costo Promedio:</span>
+                    <span className="text-xs font-bold">{(purchase.totalAmount / purchase.items.reduce((sum: number, item: any) => sum + item.quantityGood + item.quantityDamaged, 0)).toFixed(2)} Bs</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-muted/50 px-2.5 py-1 rounded-lg border border-muted-foreground/10">
+                    <span className="text-[10px] font-black uppercase text-muted-foreground/60 tracking-wider">Inversión Total:</span>
+                    <span className="text-xs font-bold">{purchase.totalAmount.toFixed(2)} Bs</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+            <Badge variant="secondary" className="px-3 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider">
               {assignments.length} Líneas a Procesar
             </Badge>
           </div>
         </CardHeader>
       </Card>
 
-      <div className="space-y-4">
-        {assignments.map((assignment, index) => (
-          <Card key={`${assignment.purchaseItemId}-${index}`} className="overflow-hidden transition-all hover:shadow-md border-muted">
-            <CardContent className="p-0">
-              <div className="grid grid-cols-1 md:grid-cols-12 items-center">
-                {/* Source Info */}
-                <div className="md:col-span-4 p-4 bg-muted/30 border-r">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground">Origen (Recibido Genérico)</span>
-                    <span className="font-semibold">{assignment.originalItem.productType.name}</span>
-                    <div className="flex gap-2 mt-2">
-                      <Badge variant="outline" className="text-[10px] border-green-200 text-green-700 bg-green-50">
-                        Total ✅: {assignment.originalItem.quantityGood}
-                      </Badge>
-                      <Badge variant="outline" className="text-[10px] border-amber-200 text-amber-700 bg-amber-50">
-                        Total ⚠️: {assignment.originalItem.quantityDamaged}
-                      </Badge>
-                    </div>
+      {purchase.items.map((originalItem: any) => {
+        const itemAssignments = assignments.filter(a => a.purchaseItemId === originalItem.id);
+        const assignedGood = itemAssignments.reduce((sum, a) => sum + a.quantityGood, 0);
+        const assignedDamaged = itemAssignments.reduce((sum, a) => sum + a.quantityDamaged, 0);
+        const remainingGood = originalItem.quantityGood - assignedGood;
+        const remainingDamaged = originalItem.quantityDamaged - assignedDamaged;
+        const isComplete = remainingGood === 0 && remainingDamaged === 0;
+
+        return (
+          <Card key={originalItem.id} className={cn("overflow-hidden transition-all border-2", isComplete ? "border-muted/30" : "border-foreground")}>
+            {/* Header del Item de Compra */}
+            <CardHeader className="bg-muted/20 border-b border-muted px-6 py-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  {/* Indicador de progreso circular */}
+                  <div className={cn("h-12 w-12 rounded-full border-2 flex items-center justify-center flex-shrink-0", isComplete ? "border-foreground bg-foreground text-background" : "border-foreground/20")}>
+                    {isComplete ? (
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                    ) : (
+                      <span className="font-black text-sm">{itemAssignments.length}</span>
+                    )}
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-bold tracking-tight">{originalItem.productType.name}</CardTitle>
                   </div>
                 </div>
-
-                {/* Arrow Icon */}
-                <div className="hidden md:flex md:col-span-1 justify-center">
-                  <ArrowRight className="text-muted-foreground w-5 h-5" />
-                </div>
-
-                {/* Destination Info */}
-                <div className="md:col-span-7 p-4">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-muted-foreground uppercase">Asignar a Variante:</label>
-                        <RegisterProductDialog 
-                          {...metadata}
-                        />
-                      </div>
-                      <Select 
-                        value={assignment.productId} 
-                        onValueChange={(val) => handleProductChange(index, val)}
-                      >
-                        <SelectTrigger className="w-full h-10">
-                          <SelectValue placeholder="Seleccionar producto específico..." />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-[300px]">
-                          {availableProducts.map(p => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.type.name} - {p.phoneModel.name} - {p.color?.name || 'S/C'}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="flex items-end justify-between gap-4">
-                      <div className="flex gap-4">
-                         <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-green-600 uppercase">Cant. Bien</label>
-                          <input 
-                            type="number" 
-                            className="w-20 h-9 border rounded-md text-center text-sm px-2 focus:ring-1 focus:ring-primary outline-none"
-                            value={assignment.quantityGood}
-                            onChange={(e) => handleQuantityChange(index, 'quantityGood', parseInt(e.target.value) || 0)}
-                          />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-bold text-amber-600 uppercase">Cant. Dañado</label>
-                          <input 
-                            type="number" 
-                            className="w-20 h-9 border rounded-md text-center text-sm px-2 focus:ring-1 focus:ring-primary outline-none"
-                            value={assignment.quantityDamaged}
-                            onChange={(e) => handleQuantityChange(index, 'quantityDamaged', parseInt(e.target.value) || 0)}
-                          />
-                        </div>
-                      </div>
-
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-9"
-                        onClick={() => handleAddVariant(assignment.purchaseItemId)}
-                        title="Añadir otra variante para este mismo item"
-                      >
-                        <Plus className="w-3.5 h-3.5 mr-1.5" />
-                        Añadir Variante
-                      </Button>
-                    </div>
+                
+                {/* Status de asignación */}
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">
+                    {isComplete ? "COMPLETADO" : "PENDIENTE"}
+                  </span>
+                  <div className="flex gap-3 text-xs font-bold">
+                    <span className={cn(remainingGood === 0 ? "text-muted-foreground/40" : "text-foreground")}>
+                      Bien: {remainingGood}/{originalItem.quantityGood}
+                    </span>
+                    <span className={cn(remainingDamaged === 0 ? "text-muted-foreground/40" : "text-foreground")}>
+                      Dañado: {remainingDamaged}/{originalItem.quantityDamaged}
+                    </span>
                   </div>
                 </div>
               </div>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-4">
+              {/* Lista de Asignaciones */}
+              <div className="space-y-3">
+                {itemAssignments.map((assignment, index) => {
+                  const assignmentIndex = assignments.findIndex(a => a === assignment);
+                  
+                  return (
+                    <div key={`${assignment.purchaseItemId}-${index}`} className="group relative bg-background border-2 border-muted rounded-xl p-4 hover:border-foreground/20 transition-all">
+                      {/* Número de variante */}
+                      <div className="absolute -top-3 -left-3 h-6 w-6 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-black">
+                        {index + 1}
+                      </div>
+                      
+                      <div className="flex flex-col lg:flex-row gap-4">
+                        {/* Selector de Producto */}
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+                              Asignar a Producto Específico
+                            </label>
+                            <RegisterProductDialog {...metadata} />
+                          </div>
+                          <Select 
+                            value={assignment.productId} 
+                            onValueChange={(val) => handleProductChange(assignmentIndex, val)}
+                          >
+                            <SelectTrigger className="!h-18 w-full rounded-xl border-1 bg-background transition-all focus:border-foreground">
+                              <SelectValue className="text-base text-foreground" placeholder="Seleccionar variante de producto..." />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-[400px] rounded-xl shadow-2xl">
+                              {availableProducts.map(p => (
+                                <SelectItem key={p.id} value={p.id} className="focus:bg-muted/50 rounded-xl py-4 px-3">
+                                  <div className="flex items-center gap-4">
+                                    <div className="h-14 w-14 rounded-xl border bg-muted overflow-hidden flex-shrink-0">
+                                      {p.imageUrl ? (
+                                        <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
+                                      ) : (
+                                        <div className="h-full w-full flex items-center justify-center bg-muted/50">
+                                          <Package className="h-7 w-7 opacity-30" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="font-bold text-base">{p.type.name} {p.phoneModel.name}</span>
+                                      <span className="text-sm text-muted-foreground">{p.color?.name || 'Sin color'}</span>
+                                    </div>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Cantidades */}
+                        <div className="flex items-end gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground block">
+                              Unidades Bien
+                            </label>
+                            <div className="relative">
+                              <input 
+                                type="number" 
+                                className="w-24 h-12 border-2 rounded-xl text-center font-bold text-lg px-2 focus:border-foreground transition-all outline-none"
+                                value={assignment.quantityGood}
+                                onChange={(e) => handleQuantityChange(assignmentIndex, 'quantityGood', parseInt(e.target.value) || 0)}
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">✅</span>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground block">
+                              Unidades Dañadas
+                            </label>
+                            <div className="relative">
+                              <input 
+                                type="number" 
+                                className="w-24 h-12 border-2 rounded-xl text-center font-bold text-lg px-2 focus:border-foreground transition-all outline-none"
+                                value={assignment.quantityDamaged}
+                                onChange={(e) => handleQuantityChange(assignmentIndex, 'quantityDamaged', parseInt(e.target.value) || 0)}
+                              />
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">⚠️</span>
+                            </div>
+                          </div>
+                          
+                          {/* Botón de eliminar variante */}
+                          {itemAssignments.length > 1 && (
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              className="h-12 w-12 rounded-xl border-2 border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all"
+                              onClick={() => {
+                                const newAssignments = [...assignments];
+                                const idx = newAssignments.findIndex(a => a === assignment);
+                                newAssignments.splice(idx, 1);
+                                setAssignments(newAssignments);
+                                toast.info("Variante eliminada");
+                              }}
+                            >
+                              <Plus className="w-5 h-5 rotate-45" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Botón Añadir Variante - Prominente con texto */}
+              {!isComplete && (
+                <Button 
+                  variant="outline"
+                  className="w-full h-14 rounded-xl border-2 border-dashed border-foreground/30 hover:border-foreground hover:bg-muted/30 transition-all group"
+                  onClick={() => handleAddVariant(originalItem.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Plus className="w-5 h-5" />
+                    </div>
+                    <div className="flex flex-col items-start">
+                      <span className="font-bold text-sm">Añadir Otra Variante</span>
+                      <span className="text-[10px] text-muted-foreground font-medium">
+                        Para distribuir el stock en múltiples productos
+                      </span>
+                    </div>
+                  </div>
+                </Button>
+              )}
+
+              {/* Mensaje cuando está completo */}
+              {isComplete && (
+                <div className="flex items-center gap-3 p-4 bg-foreground/5 rounded-xl border border-foreground/10">
+                  <div className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                  </div>
+                  <span className="font-bold text-sm">Todas las unidades han sido asignadas</span>
+                </div>
+              )}
             </CardContent>
           </Card>
-        ))}
-      </div>
+        );
+      })}
 
-      <div className="flex items-center justify-between p-6 bg-muted/20 rounded-xl border border-dashed mt-8">
-        <div className="flex items-center gap-3 text-muted-foreground text-sm">
-          <AlertTriangle className="w-5 h-5 text-amber-500" />
-          <p>Al confirmar, el stock se incrementará en los productos seleccionados y se registrarán los movimientos de inventario.</p>
+      <div className="flex items-center justify-between p-8 bg-background rounded-[2rem] border-2 border-dashed mt-12 mb-8">
+        <div className="flex items-center gap-4 text-muted-foreground">
+          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <p className="text-xs font-medium max-w-md leading-relaxed">Al confirmar, el stock se incrementará en los productos seleccionados y se registrarán los movimientos de inventario automáticamente.</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => router.push("/compras")} disabled={loading}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={loading} className="px-8 bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-lg shadow-blue-500/20">
-            {loading ? "Procesando..." : "Confirmar Asignación de Stock"}
+        <div className="flex gap-4">
+          <Button variant="ghost" className="rounded-xl font-bold px-6" onClick={() => router.push("/compras")} disabled={loading}>Cancelar</Button>
+          <Button onClick={handleSubmit} disabled={loading} className="px-10 h-12 rounded-xl bg-foreground text-background hover:bg-foreground/90 font-bold uppercase tracking-widest text-xs shadow-xl transition-all active:scale-95">
+            {loading ? "Procesando..." : "Confirmar Asignación"}
           </Button>
         </div>
       </div>

@@ -20,19 +20,27 @@ export interface AIActionResult<T> {
  */
 export async function improveProductImage(
   base64Image: string, // Data URL base64
-  prompt: string
+  prompt: string,
+  brandName: string = "",
+  modelName: string = ""
 ): Promise<AIActionResult<string>> {
   const apiKey = getApiKey();
   if (!apiKey) return { success: false, error: "OPEN_ROUTER_KEY no configurada" };
 
   try {
-    const finalPrompt = `Professional product photography: ${prompt}. 
-    COMPOSITION RULES: 
-    1. Front view only, perfectly centered.
-    2. SOLID CLEAN WHITE BACKGROUND.
-    3. ONLY THE PRODUCT, absolutely no other objects, no hands, no humans.
-    4. High resolution, studio lighting, ultra-realistic.
-    CRITICAL: DO NOT INCLUDE ANY TEXT, LETTERS, NUMBERS, WORDS, OR TITLES IN THE IMAGE.`;
+    const isApple = brandName.toLowerCase().includes('apple') || brandName.toLowerCase().includes('iphone') || modelName.toLowerCase().includes('iphone');
+    const modelReference = isApple ? `iPhone ${modelName}` : `${brandName} ${modelName}`;
+
+    const finalPrompt = `Professional e-commerce photography: ${prompt}. 
+    STRICT VISUAL RULES: 
+    1. BACKGROUND: Use a PURE FLAT WHITE BACKGROUND (#FFFFFF) only. No gradients, no shadows, no floor, no reflections.
+    2. PRODUCT ONLY: Show ONLY the phone case. No phone inside, no hands, no human parts, no other objects.
+    3. ASPECT RATIO: The output image must be 1:1 square format.
+    4. CAMERA DESIGN: The camera cutout MUST correspond EXACTLY to the ${modelReference} model.
+    5. LOGOS: If the original image has a brand logo (like the Apple "manzanita"), PRESERVE it exactly in its original position.
+    6. SHADOWS: REMOVE ALL SHADOWS. The product should look like it is floating in a pure white space.
+    7. STYLE: Ultra-realistic, high resolution, studio lighting, clean edges.
+    CRITICAL: NO TEXT, NO WATERMARKS, NO EXTRA ELEMENTS.`;
 
     const res = await fetch(OPENROUTER_URL, {
       method: "POST",

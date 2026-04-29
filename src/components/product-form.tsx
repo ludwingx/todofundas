@@ -358,14 +358,15 @@ export function ProductForm({
         return;
       }
 
-      const prompt = `Professional product photography of a ${currentColor.name} ${currentType.name} for ${currentModel.name}. Front view, centered, solid white background, high resolution.`;
+      const brandName = currentModel.brand?.name || "";
+      const prompt = `Professional product photography of a ${currentColor.name} ${currentType.name} for ${brandName} ${currentModel.name}. Front view, centered, solid white background, high resolution.`;
       
       toast.info("Generando con IA Real...", {
         description: "Enviando imagen a Gemini 2.0 Flash..."
       });
 
       const { improveProductImage } = await import("@/app/actions/ai");
-      const result = await improveProductImage(base64Data, prompt);
+      const result = await improveProductImage(base64Data, prompt, brandName, currentModel.name);
 
       if (!result.success || !result.data) {
         throw new Error(result.error || "Error en la generación");
@@ -738,7 +739,7 @@ export function ProductForm({
                   <div className="space-y-4 grid grid-cols-2 gap-4">
                     <FormField control={form.control} name="priceRetail" render={({ field }) => (
                       <FormItem className="space-y-1">
-                        <FormLabel className="text-[10px] font-bold uppercase text-primary">Precio Detal (Bs)</FormLabel>
+                        <FormLabel className="text-[10px] font-bold uppercase text-primary">Precio Referencia (Bs)</FormLabel>
                         <FormControl>
                           <Input type="number" step="0.01" {...field} value={field.value || ""} className="h-12 rounded-xl font-bold text-center" onChange={(e) => field.onChange(parseFloat(e.target.value) || null)} />
                         </FormControl>
