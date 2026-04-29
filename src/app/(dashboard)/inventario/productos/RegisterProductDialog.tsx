@@ -30,30 +30,34 @@ export function RegisterProductDialog({
   const [open, setOpen] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="flex items-center gap-2 transition-transform active:scale-95">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Registrar Producto</span>
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-4xl p-6 overflow-hidden flex flex-col max-h-[90vh] rounded-[2rem] border-none shadow-2xl">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="text-lg font-semibold">
-            Registrar Producto
-          </DialogTitle>
-        </DialogHeader>
-        <div className="flex-1 overflow-y-auto pr-1">
-          <NewProductClient
-            productTypes={productTypes}
-            phoneModels={phoneModels}
-            colors={colors}
-            materials={materials}
-            compatibilities={compatibilities}
-            onSuccess={() => setOpen(false)}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Button 
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-2 transition-transform active:scale-95"
+      >
+        <Plus className="h-4 w-4" />
+        <span className="hidden sm:inline">Registrar Producto</span>
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-4xl p-6 overflow-hidden flex flex-col max-h-[90vh] rounded-[2rem] border-none shadow-2xl">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-lg font-semibold">
+              Registrar Producto
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto pr-1">
+            <NewProductClient
+              productTypes={productTypes}
+              phoneModels={phoneModels}
+              colors={colors}
+              materials={materials}
+              compatibilities={compatibilities}
+              onSuccess={() => setOpen(false)}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

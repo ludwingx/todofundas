@@ -81,9 +81,12 @@ export async function POST(req: NextRequest) {
               De esta lista de modelos reales de iPhone, selecciona los ${count} más recientes hoy ${currentDate}:
               ${allModels.join('\n')}
 
+              REGLAS IMPORTANTES:
               - El tope máximo es la serie ${latestConfirmedSeries}.
               - NO incluyas la marca "${brandName}".
-              - No repitas estos: ${existingModels.join(', ')}.
+              - EXCLUYE ESTOS MODELOS QUE YA EXISTEN: ${existingModels.join(', ')}.
+              - NO sugieras NINGUNO de los modelos en la lista de exclusiones.
+              - Solo sugiere modelos que NO estén en la lista de exclusiones.
               - Formato: Solo nombres separados por comas, sin texto extra.
               - Usa EXACTAMENTE los nombres de la lista, no los modifiques.
             `
@@ -103,6 +106,7 @@ export async function POST(req: NextRequest) {
       .split(',')
       .map((m: string) => m.trim())
       .filter((m: string) => m.length > 0)
+      .filter((m: string) => !existingModels.includes(m))
       .slice(0, count);
 
     return NextResponse.json({ suggestedModels });

@@ -247,7 +247,12 @@ export function ProductForm({
 
         // 2. Buscar/Sugerir Modelo
         if (model) {
-          const foundModel = localPhoneModels.find(m => m.name.toLowerCase().includes(model.toLowerCase()));
+          const searchModel = model.toLowerCase().replace(/\s+/g, '');
+          const foundModel = localPhoneModels.find(m => {
+            const normalizedName = m.name.toLowerCase().replace(/\s+/g, '');
+            return normalizedName.includes(searchModel) || searchModel.includes(normalizedName);
+          });
+          
           if (foundModel) {
             form.setValue("phoneModelId", foundModel.id);
           } else {
@@ -322,14 +327,22 @@ export function ProductForm({
   };
 
   const generateIAImage = async () => {
-    if (!selectedModel || !selectedType || !selectedColor) {
-      toast.error("Selecciona modelo, tipo y color para la IA.");
+    const currentModelId = form.getValues("phoneModelId");
+    const currentTypeId = form.getValues("typeId");
+    const currentColorId = form.getValues("colorId");
+
+    const currentModel = localPhoneModels.find(m => m.id === currentModelId);
+    const currentType = productTypes.find(t => t.id === currentTypeId);
+    const currentColor = localColors.find(c => c.id === currentColorId);
+
+    if (!currentModel || !currentType || !currentColor) {
+      toast.error("Selecciona modelo, tipo y color para que la IA pueda mejorar la imagen.");
       return;
     }
 
     setIsGeneratingIA(true);
     try {
-      const referenceImage = images.length > 0 ? images[0] : null;
+      const referenceImage = images.length > 0 ? images[activeImageIndex] : null;
       let base64Data = "";
 
       if (referenceImage?.file) {
@@ -338,12 +351,14 @@ export function ProductForm({
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(referenceImage.file!);
         });
+      } else if (referenceImage?.url) {
+        base64Data = referenceImage.url;
       } else {
         toast.error("Sube una imagen primero para usar como referencia.");
         return;
       }
 
-      const prompt = `Professional product photography of a ${selectedColor.name} ${selectedType.name} for ${selectedModel.name}. Front view, centered, solid white background, high resolution.`;
+      const prompt = `Professional product photography of a ${currentColor.name} ${currentType.name} for ${currentModel.name}. Front view, centered, solid white background, high resolution.`;
       
       toast.info("Generando con IA Real...", {
         description: "Enviando imagen a Gemini 2.0 Flash..."
@@ -368,7 +383,7 @@ export function ProductForm({
         return next;
       });
       
-      toast.success(`${selectedType.name} generado con éxito`);
+      toast.success(`${currentType.name} generado con éxito`);
     } catch (error: any) {
       console.error("Error generating AI image:", error);
       toast.error("Error con la IA: " + (error.message || "Intenta de nuevo"));

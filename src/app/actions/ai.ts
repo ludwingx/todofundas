@@ -188,10 +188,13 @@ export async function analyzeProductImage(
                 type: "text", 
                 text: `Analiza esta imagen de un accesorio para celular y devuelve un objeto JSON estructurado.
                 
+                INDICACIÓN CRÍTICA:
+                Busca cualquier texto impreso en el empaque o producto, especialmente etiquetas que indiquen el modelo del celular (ej: "17 PRO", "IP 15PM", "S24 Ultra"). Usa ese texto como prioridad para identificar el modelo.
+
                 CAMPOS REQUERIDOS:
                 - type: El tipo de producto (ej: "Funda", "Protector de pantalla", "Cargador").
                 - brand: La marca del celular (ej: "Apple", "Samsung", "Xiaomi").
-                - model: El modelo de celular SIN la marca (ej: "15 Pro Max", "S24 Ultra", "Redmi Note 12"). 
+                - model: El modelo de celular SIN la marca, extraído preferiblemente del texto visible en la imagen (ej: "15 Pro Max", "17 Pro", "S24 Ultra").
                 - color: Nombre del color en español (ej: "Verde Esmeralda", "Gris Espacial").
                 - hexCode: El código hexadecimal exacto del color (ej: "#2E4739").
                 - material: El material predominante (ej: "Silicona", "Cuero", "PC Rígido").
@@ -199,7 +202,8 @@ export async function analyzeProductImage(
                 REGLAS:
                 1. Responde ÚNICAMENTE con el objeto JSON.
                 2. No incluyas bloques de código markdown (\`\`\`json).
-                3. El campo 'model' NO debe incluir la marca, solo el número/nombre del modelo.` 
+                3. El campo 'model' NO debe incluir la marca, solo el número/nombre del modelo (ej: si dice "iPhone 17 Pro" pon solo "17 Pro").
+                4. Si ves texto como "17 PRO" en una etiqueta, asume que es el modelo.` 
               },
               { type: "image_url", image_url: { url: uploadResult.url } },
             ],

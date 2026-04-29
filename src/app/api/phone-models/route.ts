@@ -90,7 +90,6 @@ export async function POST(req: NextRequest) {
         where: {
           brandId,
           name: { equals: trimmedName, mode: 'insensitive' },
-          status: 'active'
         },
       });
 

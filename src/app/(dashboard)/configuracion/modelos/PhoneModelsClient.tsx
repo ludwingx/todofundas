@@ -408,36 +408,18 @@ className="pl-9 w-full h-9"
 {/* Badges de filtros activos */}
 <div className="flex items-center gap-2 flex-wrap">
 {selectedBrandId !== "all" && (
-<Badge variant="secondary" className="gap-1 pr-1">
+<Badge variant="secondary">
 {availableBrands.find(b => b.id === selectedBrandId)?.name}
-<button
-onClick={() => setSelectedBrandId("all")}
-className="hover:bg-destructive hover:text-destructive-foreground rounded-full p-0.5 transition-colors"
->
-<X className="h-3 w-3" />
-</button>
 </Badge>
 )}
 {selectedSeries !== "all" && (
-<Badge variant="secondary" className="gap-1 pr-1">
+<Badge variant="secondary">
 Serie {selectedSeries}
-<button
-onClick={() => setSelectedSeries("all")}
-className="hover:bg-destructive hover:text-destructive-foreground rounded-full p-0.5 transition-colors"
->
-<X className="h-3 w-3" />
-</button>
 </Badge>
 )}
 {selectedType !== "all" && (
-<Badge variant="secondary" className="gap-1 pr-1">
+<Badge variant="secondary">
 {selectedType}
-<button
-onClick={() => setSelectedType("all")}
-className="hover:bg-destructive hover:text-destructive-foreground rounded-full p-0.5 transition-colors"
->
-<X className="h-3 w-3" />
-</button>
 </Badge>
 )}
 </div>
@@ -456,7 +438,7 @@ setSelectedType("all");
 className="h-9 gap-2 text-muted-foreground hover:text-foreground"
 >
 <X className="h-4 w-4" />
-Limpiar
+Limpiar filtros
 </Button>
 )}
 </div>
